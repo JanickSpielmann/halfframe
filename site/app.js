@@ -38,7 +38,7 @@ const el = {
   dlg: $('#loupe'), lCanvas: $('#lCanvas'), lName: $('#lName'), lIdx: $('#lIdx'), lPos: $('#lPos'),
   lPrev: $('#lPrev'), lNext: $('#lNext'), lClose: $('#lClose'), lDir: $('#lDir'), lFind: $('#lFind'),
   lMid: $('#lMid'), lSkip: $('#lSkip'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
-  lA: $('#lA'), lB: $('#lB'), lCapA: $('#lCapA'), lCapB: $('#lCapB'), lState: $('#lState'),
+  lGap: $('#lGap'), lA: $('#lA'), lB: $('#lB'), lCapA: $('#lCapA'), lCapB: $('#lCapB'), lState: $('#lState'),
 };
 
 /* ---------- Hilfsfunktionen ---------- */
@@ -71,7 +71,7 @@ function layout(it, w = it.w, h = it.h) {
   const o = axis(it, w, h);
   const m = Math.round(Math.min(w, h) * S.edge / 100);
   const L = o === 'v' ? w : h;
-  const cut = it.pos * L, g = S.gap / 100 * L;
+  const cut = it.pos * L, g = gapOf(it) * L;
   const a1 = Math.round(cut - g / 2), b0 = Math.round(cut + g / 2);
   let A, B;
   if (o === 'v') {
@@ -83,6 +83,9 @@ function layout(it, w = it.w, h = it.h) {
   }
   return { o, A, B, out: S.swap ? [B, A] : [A, B] };
 }
+
+// Breite des weggeschnittenen Stegs als Anteil: erkannt pro Scan, sonst aus den Einstellungen
+function gapOf(it) { return it.gap != null ? it.gap : S.gap / 100; }
 
 function outNames(it) {
   const ext = S.fmt === 'png' ? 'png' : 'jpg';
@@ -116,10 +119,24 @@ async function decode(file, max) {
   return { img: small || full, w, h };
 }
 
-/* ---------- Trennlinie suchen ----------
-   Pro Spalte (oder Zeile) wird die mittlere Helligkeit gemessen. Gesucht wird in der Bildmitte die Stelle,
-   die sich am stärksten von beiden Seiten abhebt: der Steg zwischen den Bildern. Eine Kante zwischen
-   hell und dunkel im Motiv zählt weniger, weil dort die beiden Seiten verschieden sind. */
+/* ---------- Steg suchen ----------
+   1. Steg nach Farbe: Gesucht werden Spalten (bei Bildern untereinander: Zeilen), in denen mindestens 95 %
+      der Pixel fast schwarz sind. Das ist der unbelichtete Steg bei Positiv Scans. Von diesem Kern aus wird
+      nach aussen erweitert, solange noch die Hälfte der Pixel dunkel ist (so wird auch ein leicht schräger
+      Steg ganz erfasst). Gleiches gilt für einen hellen Steg (Negativ Scans, orange Filmbasis).
+      Ein Steg muss in der Bildmitte liegen und plausibel breit sein, sonst zählt er nicht. Liegen mehrere vor,
+      gilt der nächste zur Mitte. Weggeschnitten wird genau der gefundene Steg plus ein kleiner Rand.
+   2. Rückfall: Pro Spalte wird die mittlere Helligkeit gemessen und die Stelle gesucht, die sich am
+      stärksten von beiden Seiten abhebt. Dann wird nur die Linie gesetzt, die Breite kommt aus den
+      Einstellungen. Ergebnisse dieser Art gelten als unsicher, ausser der Ausschlag ist sehr deutlich.
+   Gesucht wird auf einer Vorschau mit 800 Pixeln. Die Positionen sind Anteile (0 bis 1) und gelten
+   deshalb unverändert für das Original in voller Auflösung. */
+
+const BAND_CORE = 0.95;     // Anteil dunkler Pixel im Kern des Stegs
+const BAND_EDGE = 0.5;      // bis hierhin wird der Steg nach aussen erweitert
+const BAND_MIN = 0.006;     // Steg mindestens 0.6 % der Bildbreite
+const BAND_MAX = 0.08;      // und höchstens 8 %
+const BAND_MARGIN = 0.0015; // zusätzlich je Seite wegschneiden
 
 function median(a) {
   if (!a.length) return 0;
@@ -127,7 +144,7 @@ function median(a) {
   return s[s.length >> 1];
 }
 
-function detect(it) {
+function sample(it) {
   const src = it.pv;
   const o = axis(it);
   const k = Math.min(1, 800 / Math.max(src.width, src.height));
@@ -137,19 +154,87 @@ function detect(it) {
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(src, 0, 0, w, h);
   const d = x.getImageData(0, 0, w, h).data;
-
   const L = o === 'v' ? w : h, M = o === 'v' ? h : w;
+  // Oben und unten (bzw. links und rechts) 15 % weglassen: dort liegen oft Filmrand und Perforation
   const lo = Math.round(M * 0.15), hi = Math.max(lo + 1, Math.round(M * 0.85));
+  const n = hi - lo;
+  const lum = new Uint8Array(L * n);
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < L; i++) {
+    for (let j = 0; j < n; j++) {
+      const p = ((o === 'v' ? j + lo : i) * w + (o === 'v' ? i : j + lo)) * 4;
+      const v = (0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]) | 0;
+      lum[i * n + j] = v;
+      hist[v]++;
+    }
+  }
+  return { L, n, lum, hist };
+}
+
+function percentile(hist, q) {
+  let total = 0;
+  for (const v of hist) total += v;
+  let acc = 0;
+  for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= total * q) return i; }
+  return 255;
+}
+
+// Sucht Kerne mit mindestens 95 % passenden Pixeln, erweitert sie und liefert den besten Steg.
+function findBand(frac, L) {
+  const zA = Math.round(L * 0.3), zB = Math.round(L * 0.7);
+  const lim0 = Math.round(L * 0.2), lim1 = Math.round(L * 0.8);
+  const ok = [], wide = [];
+  let i = zA;
+  while (i <= zB) {
+    if (frac[i] < BAND_CORE) { i++; continue; }
+    let l = i, r = i;
+    while (r + 1 <= lim1 && frac[r + 1] >= BAND_CORE) r++;
+    i = r + 1;
+    while (l - 1 >= lim0 && frac[l - 1] >= BAND_EDGE) l--;
+    while (r + 1 <= lim1 && frac[r + 1] >= BAND_EDGE) r++;
+    const wFrac = (r - l + 1) / L;
+    const band = { l, r, width: wFrac, center: (l + r + 1) / 2 / L };
+    if (wFrac > BAND_MAX) wide.push(band);
+    else if (wFrac >= BAND_MIN) ok.push(band);
+    if (r + 1 > i) i = r + 1;
+  }
+  const near = (a, b) => Math.abs(a.center - 0.5) - Math.abs(b.center - 0.5);
+  ok.sort(near);
+  wide.sort(near);
+  return { band: ok[0] || null, wide: wide[0] || null };
+}
+
+function bandSearch(smp) {
+  const { L, n, lum, hist } = smp;
+  const darkT = Math.min(70, percentile(hist, 0.02) + 40);
+  const lightT = Math.max(150, percentile(hist, 0.98) - 30);
+  const dark = new Float32Array(L), light = new Float32Array(L);
+  for (let i = 0; i < L; i++) {
+    let dc = 0, lc = 0;
+    for (let j = 0; j < n; j++) {
+      const v = lum[i * n + j];
+      if (v <= darkT) dc++;
+      else if (v >= lightT) lc++;
+    }
+    dark[i] = dc / n;
+    light[i] = lc / n;
+  }
+  const d = findBand(dark, L);
+  if (d.band) return { ...d, kind: 'dunkel' };
+  const l = findBand(light, L);
+  if (l.band) return { ...l, kind: 'hell' };
+  return { band: null, wide: d.wide || l.wide, kind: d.wide ? 'dunkel' : 'hell' };
+}
+
+// Rückfall: Stelle, die sich am stärksten von beiden Seiten abhebt
+function contrastSearch(smp) {
+  const { L, n, lum } = smp;
   const prof = new Float32Array(L);
   for (let i = 0; i < L; i++) {
     let s = 0;
-    for (let j = lo; j < hi; j++) {
-      const p = ((o === 'v' ? j : i) * w + (o === 'v' ? i : j)) * 4;
-      s += 0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2];
-    }
-    prof[i] = s / (hi - lo);
+    for (let j = 0; j < n; j++) s += lum[i * n + j];
+    prof[i] = s / n;
   }
-
   const s = Math.max(3, Math.round(L * 0.025));
   const a = Math.round(L * 0.34), b = Math.round(L * 0.66);
   const win = (from, to) => {
@@ -169,22 +254,51 @@ function detect(it) {
     if (sm[i] > bestV) { bestV = sm[i]; best = i; }
   }
   if (best < 0 || bestV < 5) return null;
-
   let l = best, r = best;
   while (l > a + 1 && sm[l - 1] >= bestV * 0.5) l--;
   while (r < b - 1 && sm[r + 1] >= bestV * 0.5) r++;
   let second = 0;
   for (let i = a + 1; i < b; i++) if (i < l - s || i > r + s) second = Math.max(second, sm[i]);
-  return { pos: ((l + r) / 2 + 0.5) / L, sure: bestV >= 12 && second < bestV * 0.6 };
+  return { pos: ((l + r) / 2 + 0.5) / L, sure: bestV >= 25 && second < bestV * 0.5 };
+}
+
+// Typische Stegbreite: Median der sicher erkannten Stege, sonst 2.2 %
+function typicalGap() {
+  const g = items.filter((i) => i.state === 'auto' && i.gap != null && (i.how === 'dunkel' || i.how === 'hell')).map((i) => i.gap);
+  return g.length ? median(g) : 0.022;
+}
+
+function detect(it) {
+  const smp = sample(it);
+  const res = bandSearch(smp);
+  if (res.band) {
+    return { pos: res.band.center, gap: res.band.width + 2 * BAND_MARGIN, sure: true, how: res.kind };
+  }
+  const c = contrastSearch(smp);
+  // Ein zu breiter Bereich: Steg und dunkles Motiv grenzen aneinander. Der Steg liegt dann an der Kante,
+  // die näher bei der Bildmitte ist. Seine Breite kommt von den anderen Scans dieser Rolle.
+  if (res.wide) {
+    const w = res.wide, L = smp.L;
+    const g = typicalGap();
+    const left = w.l / L, right = (w.r + 1) / L;
+    const pos = Math.abs(right - 0.5) < Math.abs(left - 0.5) ? right - g / 2 : left + g / 2;
+    return { pos, gap: g, sure: false, how: 'an dunklem Motiv' };
+  }
+  if (c) return { pos: c.pos, gap: null, sure: c.sure, how: 'kontrast' };
+  return null;
 }
 
 function autoDetect(it) {
   const r = detect(it);
   if (r) {
     it.pos = clamp(r.pos, POS_MIN, POS_MAX);
+    it.gap = r.gap;
+    it.how = r.how;
     it.state = r.sure ? 'auto' : 'check';
   } else {
     it.pos = 0.5;
+    it.gap = null;
+    it.how = '';
     it.state = 'check';
   }
   return !!r && r.sure;
@@ -278,7 +392,7 @@ function makeItem({ file, rel }) {
     id: nextId++, file, rel, name,
     dir: slash >= 0 ? rel.slice(0, slash + 1) : '',
     base: (dot > 0 ? name.slice(0, dot) : name) || 'bild',
-    w: 0, h: 0, pv: null, big: null, pos: 0.5, orient: 'auto',
+    w: 0, h: 0, pv: null, big: null, pos: 0.5, gap: null, how: '', orient: 'auto',
     state: 'load', skip: false, dead: false, no: 0, card: null,
   };
 }
@@ -598,6 +712,9 @@ function paintLoupe() {
   const src = it.big || it.pv;
   drawSplit(el.lCanvas, src, it);
   el.lPos.textContent = (it.pos * 100).toFixed(1) + ' %';
+  el.lGap.textContent = it.gap != null
+    ? `Steg ${(it.gap * 100).toFixed(1)} % breit, erkannt (${it.how})`
+    : `Steg ${S.gap.toFixed(1)} % breit, aus den Einstellungen`;
   el.lSkip.checked = it.skip;
   const st = chipState(it);
   el.lState.dataset.state = st;

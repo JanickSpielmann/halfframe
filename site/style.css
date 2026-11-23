@@ -354,6 +354,7 @@ body:not(.has-items) .toast { bottom: 24px; }
 .nudge { display: inline-flex; align-items: center; gap: 6px; }
 .nudge output { font-family: var(--mono); min-width: 64px; text-align: center; }
 .l-tools select { width: auto; }
+.l-gap { color: var(--muted); font-size: .82rem; }
 .l-out { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 16px; padding: 0 16px 16px; }
 .l-out figure { margin: 0; display: grid; gap: 6px; }
 .l-out canvas {

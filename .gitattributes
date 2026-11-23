@@ -1,0 +1,5 @@
+# Zeilenenden im Repository immer LF, auch wenn unter Windows ausgecheckt wird
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

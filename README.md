@@ -18,7 +18,7 @@ Eine Seite, auf der man einen Ordner mit Scans von Half Frame Filmen wählt und 
 ## Verhalten der Seite
 
 * Ordner wählen, Ordner hineinziehen oder einzelne Scans wählen. Unterordner werden mitgelesen.
-* Jeder Scan erscheint als Filmstück auf einem Kontaktbogen. Die Trennlinie wird beim Laden gesucht. Unsichere Scans sind gelb markiert («Bitte prüfen»), ein Klick auf «x prüfen» zeigt nur diese.
+* Jeder Scan erscheint als Filmstück auf einem Kontaktbogen. Der Steg wird beim Laden gesucht: zuerst Spalten mit mindestens 95 % fast schwarzen Pixeln (bei Negativen hellen), erweitert bis die Hälfte der Pixel nicht mehr passt. Weggeschnitten wird genau dieser Bereich plus 0.15 % je Seite. Nur in der Bildmitte (30 bis 70 %) und bei plausibler Breite (0.6 bis 8 %). Grenzt ein dunkles Motiv an, gilt die Kante näher zur Mitte und die typische Breite der Rolle. Ohne Steg sucht die Seite die Stelle mit dem stärksten Helligkeitsunterschied, die Breite kommt dann aus den Einstellungen. Die Parameter stehen oben im Abschnitt «Steg suchen» in `site/app.js`. Unsichere Scans sind gelb markiert («Bitte prüfen»), ein Klick auf «x prüfen» zeigt nur diese.
 * Linie setzen: im Bild klicken oder ziehen, Pfeiltasten verschieben fein (Shift grösser). Die Lupe zeigt den Scan gross mit beiden Ergebnissen, Enter bestätigt und geht zum nächsten Scan.
 * Einstellungen für alle Scans: Steg in der Mitte, Rand aussen, Drehen, Format (JPG oder PNG), Reihenfolge tauschen. Sie bleiben im Browser gespeichert.
 * Ausgabe immer als **eine ZIP Datei** im Download Ordner, Name `<Ordner> einzeln.zip`. Darin `<name>_1.jpg` und `<name>_2.jpg`, Unterordner bleiben erhalten. Über rund 450 MB wird auf mehrere ZIP verteilt (`Teil 1`, `Teil 2`).
