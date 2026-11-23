@@ -4,6 +4,7 @@
    Der erste Eintrag bestimmt die Version unten auf der Seite.
    Zählung: Die erste Zahl steigt bei einer neuen Gestaltung, sonst zählt die letzte Zahl hoch. */
 const CHANGELOG = [
+  { version: '2.4.1', date: '23.11.2026', text: 'Ein Klick auf «ZIP herunterladen» öffnet ein Fenster mit den Einstellungen zum Speichern: Format, Qualität und Dateinamen. Erst dort startet der Download.' },
   { version: '2.4.0', date: '23.11.2026', text: 'Beim Speichern lassen sich die Bilder umbenennen: Name, Datum und ein Wort vor der Nummer, zum Beispiel «Film 1 2026-11-23 Foto 001». Die Nummer läuft durch alle Scans.' },
   { version: '2.3.3', date: '23.11.2026', text: 'Die Leertaste zentriert die Linie jetzt immer, auch wenn du zuletzt auf einen Dreh Knopf geklickt hast.' },
   { version: '2.3.2', date: '23.11.2026', text: 'Die Zahlen 1 und 2 sind jetzt Abzeichen und überall gleich gross, ebenso die Dreh Knöpfe. Die Grösse hängt nicht mehr vom Scan ab.' },

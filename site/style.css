@@ -407,6 +407,11 @@ kbd {
   display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px;
   color: var(--faint); font-size: .78rem;
 }
+.exportdlg { width: min(460px, calc(100% - 32px)); }
+.ex-body { display: grid; gap: 16px; padding: 18px 22px; }
+.ex-info { margin: 0; color: var(--muted); font-size: .9rem; text-wrap: pretty; }
+.ex-foot { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; background: var(--surface); border-top: 1px solid var(--line); }
+.ex-foot form { margin: 0; }
 .version { color: inherit; font-family: var(--mono); text-decoration: underline dotted; text-underline-offset: 3px; }
 .version:hover, .version:focus-visible { color: var(--ink); }
 

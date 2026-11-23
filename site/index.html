@@ -81,8 +81,7 @@
               <span>Rand aussen wegschneiden <output id="sEdgeOut"></output></span>
               <input id="sEdge" type="range" min="0" max="8" step="0.1" value="0">
             </label>
-            <div class="row2">
-              <label class="field"><span>Alle Bilder drehen</span>
+            <label class="field"><span>Alle Bilder drehen</span>
                 <select id="sRot">
                   <option value="0">Nicht drehen</option>
                   <option value="90">90° rechts</option>
@@ -90,36 +89,7 @@
                   <option value="180">180°</option>
                 </select>
               </label>
-              <label class="field"><span>Format</span>
-                <select id="sFmt">
-                  <option value="jpeg">JPG</option>
-                  <option value="png">PNG (verlustfrei)</option>
-                </select>
-              </label>
-            </div>
-            <label class="field" id="sQField">
-              <span>JPG Qualität <output id="sQOut"></output></span>
-              <input id="sQ" type="range" min="70" max="100" step="1" value="95">
-            </label>
             <label class="check"><input id="sSwap" type="checkbox"> Reihenfolge tauschen (Bild 2 zuerst)</label>
-            <fieldset class="names">
-              <legend>Dateinamen</legend>
-              <label class="check"><input id="sRename" type="checkbox"> Beim Speichern umbenennen</label>
-              <div id="nameFields" class="names-fields" hidden>
-                <label class="field"><span>Name</span>
-                  <input id="nName" type="text" maxlength="60" value="Film 1" placeholder="Film 1" autocomplete="off">
-                </label>
-                <label class="check"><input id="nUseDate" type="checkbox" checked> Datum anhängen</label>
-                <label class="field" id="nDateField"><span>Datum</span>
-                  <input id="nDate" type="date">
-                </label>
-                <label class="field"><span>Wort vor der Nummer</span>
-                  <input id="nLabel" type="text" maxlength="30" value="Foto" placeholder="Foto" autocomplete="off">
-                </label>
-                <small>Beispiel: <code id="nExample"></code></small>
-              </div>
-              <small id="nOff">Ohne Umbenennen heissen die Dateien wie der Scan, mit <code>_1</code> und <code>_2</code> am Ende.</small>
-            </fieldset>
             <button id="redetect" class="btn small" type="button">Alle Linien neu suchen</button>
           </div>
         </details>
@@ -194,6 +164,51 @@
     <figure><canvas id="lA"></canvas><figcaption id="lCapA"></figcaption></figure>
     <figure><canvas id="lB"></canvas><figcaption id="lCapB"></figcaption></figure>
     <p class="keys"><kbd>←</kbd><kbd>→</kbd> fein verschieben · <kbd>Shift</kbd> grösser · <kbd>Leertaste</kbd> Mitte · <kbd>1</kbd><kbd>2</kbd> Bild drehen · <kbd>Enter</kbd> passt, weiter · <kbd>Esc</kbd> schliessen</p>
+  </div>
+</dialog>
+
+<dialog id="exportDlg" class="changelog exportdlg" aria-labelledby="exTitle">
+  <div class="cl-head">
+    <h2 id="exTitle">ZIP herunterladen</h2>
+    <form method="dialog"><button class="icon" aria-label="Schliessen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></form>
+  </div>
+  <div class="ex-body">
+    <p id="exInfo" class="ex-info"></p>
+    <label class="field"><span>Format</span>
+      <select id="sFmt">
+        <option value="jpeg">JPG</option>
+        <option value="png">PNG (verlustfrei)</option>
+      </select>
+    </label>
+    <label class="field" id="sQField">
+              <span>JPG Qualität <output id="sQOut"></output></span>
+              <input id="sQ" type="range" min="70" max="100" step="1" value="95">
+            </label>
+    <fieldset class="names">
+              <legend>Dateinamen</legend>
+              <label class="check"><input id="sRename" type="checkbox"> Beim Speichern umbenennen</label>
+              <div id="nameFields" class="names-fields" hidden>
+                <label class="field"><span>Name</span>
+                  <input id="nName" type="text" maxlength="60" value="Film 1" placeholder="Film 1" autocomplete="off">
+                </label>
+                <label class="check"><input id="nUseDate" type="checkbox" checked> Datum anhängen</label>
+                <label class="field" id="nDateField"><span>Datum</span>
+                  <input id="nDate" type="date">
+                </label>
+                <label class="field"><span>Wort vor der Nummer</span>
+                  <input id="nLabel" type="text" maxlength="30" value="Foto" placeholder="Foto" autocomplete="off">
+                </label>
+                <small>Beispiel: <code id="nExample"></code></small>
+              </div>
+              <small id="nOff">Ohne Umbenennen heissen die Dateien wie der Scan, mit <code>_1</code> und <code>_2</code> am Ende.</small>
+            </fieldset>
+  </div>
+  <div class="ex-foot">
+    <form method="dialog"><button class="btn" id="exCancel">Abbrechen</button></form>
+    <button class="btn primary" type="button" id="exGo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+      ZIP herunterladen
+    </button>
   </div>
 </dialog>
 

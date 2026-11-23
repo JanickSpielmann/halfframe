@@ -37,6 +37,7 @@ const el = {
   rot: $('#sRot'), swap: $('#sSwap'), fmt: $('#sFmt'), q: $('#sQ'), qOut: $('#sQOut'), qField: $('#sQField'),
   rename: $('#sRename'), nameFields: $('#nameFields'), nOff: $('#nOff'), nName: $('#nName'), nUseDate: $('#nUseDate'),
   nDate: $('#nDate'), nDateField: $('#nDateField'), nLabel: $('#nLabel'), nExample: $('#nExample'),
+  exDlg: $('#exportDlg'), exInfo: $('#exInfo'), exGo: $('#exGo'),
   redetect: $('#redetect'),
   dock: $('#dock'), dockText: $('#dockText'), meter: $('#meter'), zip: $('#zip'), zipSub: $('#zipSub'),
   toast: $('#toast'), sheetHint: $('#sheetHint'),
@@ -1203,7 +1204,13 @@ function init() {
   el.addMore.addEventListener('click', () => el.inFiles.click());
   el.demo.addEventListener('click', demoImage);
   el.reset.addEventListener('click', resetAll);
-  el.zip.addEventListener('click', exportZip);
+  // «ZIP herunterladen» öffnet zuerst die Einstellungen zum Speichern (Format, Qualität, Dateinamen)
+  el.zip.addEventListener('click', () => {
+    const n = items.filter(isExported).length;
+    el.exInfo.textContent = `${n * 2} Bilder aus ${n} Scans kommen in die Datei «${zipBase()}.zip».`;
+    if (!el.exDlg.open) el.exDlg.showModal();
+  });
+  el.exGo.addEventListener('click', () => { el.exDlg.close(); exportZip(); });
 
   el.inDir.addEventListener('change', () => {
     const files = [...el.inDir.files];
