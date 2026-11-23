@@ -551,6 +551,7 @@ function bindLine(cv, getIt, withKeys) {
       const d = view === 'scan' ? nudgeKey(e) : 0;
       if (d && it && it.pv) { e.preventDefault(); setPos(it, it.pos + d, true); }
       if (e.key === 'Enter' && it && it.pv) { e.preventDefault(); openLoupe(it); }
+      if (e.key === ' ' && it && it.pv) { e.preventDefault(); setPos(it, 0.5, true); }
     });
   }
 }
@@ -1200,6 +1201,7 @@ function init() {
     const d = nudgeKey(e);
     if (d) { e.preventDefault(); setPos(loupe, loupe.pos + d, true); return; }
     if (e.key === 'Enter' && t !== 'BUTTON') { e.preventDefault(); step(1, true); }
+    if (e.key === ' ' && t !== 'BUTTON' && t !== 'INPUT') { e.preventDefault(); setPos(loupe, 0.5, true); }
     if (e.key === 'PageDown') { e.preventDefault(); step(1, false); }
     if (e.key === 'PageUp') { e.preventDefault(); step(-1, false); }
   });
