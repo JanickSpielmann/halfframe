@@ -33,13 +33,20 @@ Zählung: Die erste Zahl steigt bei einer neuen Gestaltung (heute 2.x.x), sonst 
 
 ## Update einspielen
 
-1. Ändern, auf `main` committen, `git push`.
-2. Live schalten: `git publish` (Alias auf dem Laptop) oder `git push origin HEAD:release`.
-3. Nach höchstens einer Minute holt HP-Winkel den Stand (Pull Job `winkel-deploy.timer`). Kontrolle: `~/docker/winkel-deploy/deploy.log` auf HP-Winkel.
+In diesem Repository wird direkt auf `release` gearbeitet, `main` wird gleich mitgeführt. Jeder Push auf `release` ist nach höchstens einer Minute live (Pull Job `winkel-deploy.timer` auf HP-Winkel, Kontrolle in `~/docker/winkel-deploy/deploy.log`).
 
-Vorher mit `git log origin/release..main` ansehen, was alles live ginge.
+Einmalig im Klon (nur für dieses Repository, nicht global, weil `git publish` anderswo `main` auf `release` schiebt):
 
-Ändert sich nur `site/`, startet kein Container neu. Ändern sich `nginx/` oder `docker-compose.yml`, baut der Pull Job den Container neu.
+    git config alias.publish '!git push origin HEAD:release && git push origin HEAD:main'
+
+Alltag:
+
+    git pull
+    git add -A
+    git commit -m "Was geändert wurde"
+    git publish
+
+Vorher in `site/changelog.js` einen Eintrag ergänzen. Ändert sich nur `site/`, startet kein Container neu. Ändern sich `nginx/` oder `docker-compose.yml`, baut der Pull Job den Container neu.
 
 ## Einrichtung auf HP-Winkel (einmalig)
 
