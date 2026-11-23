@@ -907,10 +907,46 @@ function resetAll() {
   window.scrollTo({ top: 0 });
 }
 
+/* ---------- Version und Änderungsprotokoll ---------- */
+
+function initChangelog() {
+  const list = typeof CHANGELOG !== 'undefined' ? CHANGELOG : [];
+  const link = $('#versionLink');
+  const dlg = $('#changelog');
+  if (!list.length) return;
+  link.textContent = `Version ${list[0].version} · ${list[0].date}`;
+  const box = $('#clList');
+  for (const c of list) {
+    const item = document.createElement('div');
+    item.className = 'cl-item';
+    const v = document.createElement('strong');
+    v.textContent = c.version ? `Version ${c.version}` : c.label;
+    const d = document.createElement('span');
+    d.className = 'cl-date';
+    d.textContent = c.date;
+    const p = document.createElement('p');
+    p.textContent = c.text;
+    item.append(v, d, p);
+    box.append(item);
+  }
+  const open = () => { if (!dlg.open) dlg.showModal(); };
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    history.replaceState(null, '', '#aenderungen');
+    open();
+  });
+  dlg.addEventListener('close', () => {
+    if (location.hash === '#aenderungen') history.replaceState(null, '', location.pathname + location.search);
+  });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  if (location.hash === '#aenderungen') open();
+}
+
 /* ---------- Start ---------- */
 
 function init() {
   loadSettings();
+  initChangelog();
 
   el.pickDir.addEventListener('click', pickDir);
   el.pickFiles.addEventListener('click', () => el.inFiles.click());

@@ -222,7 +222,7 @@ input[type=range] { width: 100%; accent-color: var(--safe); }
 input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--safe); margin: 0; flex: none; }
 .check { display: flex; align-items: center; gap: 10px; font-size: .9rem; cursor: pointer; }
 
-.grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.grid { display: grid; gap: 18px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 .grid.only-check .card:not([data-state="check"]) { display: none; }
 
 .card {
@@ -366,6 +366,36 @@ kbd {
   font-family: var(--mono); font-size: .74rem; color: var(--muted);
   border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 5px; margin: 0 2px;
 }
+
+/* ---------- Fuss und Änderungsprotokoll ---------- */
+
+.foot {
+  width: 100%; max-width: 1280px; margin: 0 auto; padding: 8px clamp(16px, 3vw, 32px) 22px;
+  display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px;
+  color: var(--faint); font-size: .78rem;
+}
+.version { color: inherit; font-family: var(--mono); text-decoration: underline dotted; text-underline-offset: 3px; }
+.version:hover, .version:focus-visible { color: var(--ink); }
+
+.changelog {
+  width: min(640px, calc(100% - 32px)); max-height: 85vh; padding: 0; overflow: auto;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 20px;
+  box-shadow: 0 40px 120px -30px rgba(0, 0, 0, .8);
+}
+.changelog::backdrop { background: rgba(6, 5, 4, .6); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.cl-head {
+  position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 18px 22px; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.cl-head h2 { margin: 0; font-size: 1.4rem; letter-spacing: -.02em; }
+.cl-head form { margin: 0; }
+.cl-list { padding: 8px 22px 22px; }
+.cl-item { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.cl-item:last-child { border-bottom: 0; }
+.cl-item strong { font-family: var(--mono); font-size: .95rem; }
+.cl-item .cl-date { margin-left: 10px; color: var(--muted); font-size: .85rem; }
+.cl-item p { margin: 6px 0 0; color: var(--muted); font-size: .92rem; text-wrap: pretty; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes shimmer { to { background-position: -300% 0; } }

@@ -9,6 +9,7 @@ Eine Seite, auf der man einen Ordner mit Scans von Half Frame Filmen wählt und 
 | `site/index.html` | Aufbau der Seite: Start mit Ablagefläche, Kontaktbogen, Lupe |
 | `site/app.js` | Scans lesen, Trennlinie suchen und setzen, ZIP erzeugen |
 | `site/style.css` | Aussehen (dunkel: Dunkelkammer, hell: Leuchttisch, folgt der Einstellung des Geräts) |
+| `site/changelog.js` | Änderungsprotokoll, bestimmt die Version unten auf der Seite |
 | `site/favicon.svg` | Symbol |
 | `nginx/default.conf` | Konfiguration des Webservers (kein Cache für Seiten, `noindex`) |
 | `docker-compose.yml` | nginx Container `halfframe`, hängt am Netzwerk `proxy` (Caddy) |
@@ -23,6 +24,12 @@ Eine Seite, auf der man einen Ordner mit Scans von Half Frame Filmen wählt und 
 * Ausgabe immer als **eine ZIP Datei** im Download Ordner, Name `<Ordner> einzeln.zip`. Darin `<name>_1.jpg` und `<name>_2.jpg`, Unterordner bleiben erhalten. Über rund 450 MB wird auf mehrere ZIP verteilt (`Teil 1`, `Teil 2`).
 * Was der Browser lesen kann, geht: JPG, PNG, WebP. TIFF und HEIC nur, wenn der Browser sie öffnet (Safari ja, Chrome nein), sonst wird der Scan als «Nicht lesbar» markiert.
 * Metadaten (EXIF) werden nicht übernommen. JPG wird neu kodiert (Qualität einstellbar), PNG ist verlustfrei.
+
+## Versionsnummer
+
+Unten rechts steht die Version als Link. Ein Klick öffnet das Änderungsprotokoll (auch direkt über `/#aenderungen`). Bei jeder Änderung an der Seite in `site/changelog.js` oben einen Eintrag mit Version, Datum und einem Satz ergänzen (neueste zuerst). Der erste Eintrag bestimmt die angezeigte Version, sonst muss nichts angepasst werden.
+
+Zählung: Die erste Zahl steigt bei einer neuen Gestaltung (heute 2.x.x), sonst zählt die letzte Zahl hoch (2.0.1, 2.0.2, ...).
 
 ## Update einspielen
 

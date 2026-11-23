@@ -111,6 +111,12 @@
     <p class="sheet-hint">Klicke oder ziehe im Bild, um die rote Linie zu setzen. Mit der Lupe prüfst du einen Scan in gross.</p>
     <div id="grid" class="grid"></div>
   </section>
+
+  <footer class="foot">
+    <span>Läuft in deinem Browser · gehostet im Winkel</span>
+    <!-- Version und Datum kommen aus dem ersten Eintrag in changelog.js -->
+    <a href="#aenderungen" id="versionLink" class="version">Änderungsprotokoll</a>
+  </footer>
 </main>
 
 <div id="dock" class="dock" hidden>
@@ -162,9 +168,18 @@
   </div>
 </dialog>
 
+<dialog id="changelog" class="changelog" aria-labelledby="clTitle">
+  <div class="cl-head">
+    <h2 id="clTitle">Änderungsprotokoll</h2>
+    <form method="dialog"><button class="icon" aria-label="Schliessen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></form>
+  </div>
+  <div id="clList" class="cl-list"></div>
+</dialog>
+
 <input id="inDir" type="file" webkitdirectory multiple hidden>
 <input id="inFiles" type="file" accept="image/*,.tif,.tiff,.heic,.heif" multiple hidden>
 <noscript><p class="intro">Diese Seite braucht JavaScript.</p></noscript>
+<script src="changelog.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
