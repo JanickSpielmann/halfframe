@@ -240,7 +240,6 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--safe); mar
   transition: border-color .2s; animation: rise .35s ease both;
 }
 .card[data-state="check"] { border-color: color-mix(in oklab, var(--edge) 60%, var(--line)); }
-.card.skipped .film > .cv { opacity: .3; filter: grayscale(1); }
 
 .film { position: relative; background: var(--film); border-radius: 9px; padding: 24px 8px; }
 .film::before, .film::after {
@@ -291,11 +290,6 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--safe); mar
 .chip[data-state="manual"] { color: var(--ink); }
 .chip[data-state="error"] { color: var(--safe); }
 .chip[data-state="skip"] { color: var(--faint); }
-.skip {
-  background: none; border: 0; padding: 4px 2px; color: var(--faint); font-size: .8rem;
-  text-decoration: underline; text-underline-offset: 3px;
-}
-.skip:hover { color: var(--ink); }
 
 /* ---------- Leiste unten ---------- */
 

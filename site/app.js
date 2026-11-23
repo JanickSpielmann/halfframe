@@ -39,7 +39,7 @@ const el = {
   toast: $('#toast'), sheetHint: $('#sheetHint'),
   dlg: $('#loupe'), lCanvas: $('#lCanvas'), lName: $('#lName'), lIdx: $('#lIdx'), lPos: $('#lPos'),
   lPrev: $('#lPrev'), lNext: $('#lNext'), lClose: $('#lClose'), lDir: $('#lDir'), lFind: $('#lFind'),
-  lMid: $('#lMid'), lSkip: $('#lSkip'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
+  lMid: $('#lMid'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
   lGap: $('#lGap'), lA: $('#lA'), lB: $('#lB'), lCapA: $('#lCapA'), lCapB: $('#lCapB'), lState: $('#lState'),
 };
 
@@ -463,7 +463,6 @@ function buildCard(it) {
     <div class="meta">
       <span class="name"></span>
       <span class="chip"></span>
-      <button class="skip" type="button" hidden></button>
     </div>`;
   const cv = $('.cv', card);
   const nm = $('.name', card);
@@ -472,7 +471,6 @@ function buildCard(it) {
   cv.setAttribute('aria-label', `Trennlinie von ${it.name}. Klicken oder ziehen, Pfeiltasten verschieben fein.`);
   bindLine(cv, () => it, true);
   $('.lupe', card).addEventListener('click', () => openLoupe(it));
-  $('.skip', card).addEventListener('click', () => { it.skip = !it.skip; renderCard(it); updateSummary(); });
   it.card = card;
   return card;
 }
@@ -482,7 +480,6 @@ function renderCard(it) {
   if (!card) return;
   const st = chipState(it);
   card.dataset.state = it.state;
-  card.classList.toggle('skipped', it.skip);
   const cv = $('.cv', card), ph = $('.ph', card);
   if (it.pv) {
     ph.hidden = true;
@@ -495,9 +492,6 @@ function renderCard(it) {
   const chip = $('.chip', card);
   chip.dataset.state = st;
   chip.textContent = STATE_TEXT[st];
-  const skip = $('.skip', card);
-  skip.hidden = !it.pv;
-  skip.textContent = it.skip ? 'Aufnehmen' : 'Weglassen';
   $('.lupe', card).disabled = !it.pv;
   $('.edge', card).textContent = `${pad2(it.no)}  ▸  ${pad2(it.no)}A`;
 }
@@ -772,7 +766,6 @@ function paintLoupe() {
   el.lGap.textContent = it.gap != null
     ? `Steg ${(it.gap * 100).toFixed(1)} % breit, erkannt (${it.how})`
     : `Steg ${S.gap.toFixed(1)} % breit, aus den Einstellungen`;
-  el.lSkip.checked = it.skip;
   const st = chipState(it);
   el.lState.dataset.state = st;
   el.lState.textContent = STATE_TEXT[st];
@@ -1187,11 +1180,6 @@ function init() {
     if (!loupe) return;
     loupe.orient = el.lDir.value;
     autoDetect(loupe);
-    renderCard(loupe); updateSummary(); drawLoupe();
-  });
-  el.lSkip.addEventListener('change', () => {
-    if (!loupe) return;
-    loupe.skip = el.lSkip.checked;
     renderCard(loupe); updateSummary(); drawLoupe();
   });
   el.dlg.addEventListener('keydown', (e) => {
