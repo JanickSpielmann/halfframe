@@ -200,6 +200,15 @@ body.dragging .strip { outline-color: var(--safe); transform: scale(1.01); }
 }
 .pill.warn { color: var(--edge); border-color: color-mix(in oklab, var(--edge) 45%, var(--line)); }
 .tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 11px; background: var(--raise); }
+.seg button {
+  border: 0; background: transparent; color: var(--muted); font-weight: 600; font-size: .9rem;
+  padding: 7px 12px; border-radius: 8px;
+}
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+.view-split .film { padding-left: 14px; padding-right: 14px; }
+.view-split .cv { border-radius: 2px; }
 .sheet-hint { color: var(--muted); font-size: .88rem; margin: 12px 0 16px; }
 
 .settings { position: relative; }

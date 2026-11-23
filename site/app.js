@@ -21,6 +21,8 @@ let work = Promise.resolve();
 let exporting = false;
 let onlyCheck = false;
 let loupe = null;
+let view = 'scan';   // 'scan': Scan mit Linie, 'split': die beiden fertigen Bilder
+const VIEW_STORE = 'halfframe.view';
 
 const ZOOM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8.5v5M8.5 11h5"/></svg>';
 
@@ -34,7 +36,7 @@ const el = {
   rot: $('#sRot'), swap: $('#sSwap'), fmt: $('#sFmt'), q: $('#sQ'), qOut: $('#sQOut'), qField: $('#sQField'),
   redetect: $('#redetect'),
   dock: $('#dock'), dockText: $('#dockText'), meter: $('#meter'), zip: $('#zip'), zipSub: $('#zipSub'),
-  toast: $('#toast'),
+  toast: $('#toast'), sheetHint: $('#sheetHint'),
   dlg: $('#loupe'), lCanvas: $('#lCanvas'), lName: $('#lName'), lIdx: $('#lIdx'), lPos: $('#lPos'),
   lPrev: $('#lPrev'), lNext: $('#lNext'), lClose: $('#lClose'), lDir: $('#lDir'), lFind: $('#lFind'),
   lMid: $('#lMid'), lSkip: $('#lSkip'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
@@ -379,6 +381,57 @@ function drawPart(cv, src, r, k, max) {
   x.drawImage(src, r.x * k, r.y * k, sw, sh, -sw * f / 2, -sh * f / 2, sw * f, sh * f);
 }
 
+// Die beiden fertigen Bilder nebeneinander, so wie sie ins ZIP kommen (Reihenfolge und Drehung)
+function drawResult(cv, src, it) {
+  const k = src.width / it.w;
+  const { out } = layout(it);
+  const turned = S.rot % 180 !== 0;
+  const parts = out.map((r) => {
+    const sw = Math.max(0, r.w * k), sh = Math.max(0, r.h * k);
+    return { r, sw, sh, w: turned ? sh : sw, h: turned ? sw : sh };
+  });
+  const gap = Math.round(Math.max(parts[0].w, parts[1].w, 1) * 0.06);
+  const W = Math.max(1, Math.round(parts[0].w + parts[1].w + gap));
+  const H = Math.max(1, Math.round(Math.max(parts[0].h, parts[1].h)));
+  if (cv.width !== W) cv.width = W;
+  if (cv.height !== H) cv.height = H;
+  const x = cv.getContext('2d');
+  x.clearRect(0, 0, W, H);
+  let ox = 0;
+  const fs = Math.max(11, Math.round(Math.max(W, H) / 30));
+  parts.forEach((p, n) => {
+    if (p.sw >= 2 && p.sh >= 2) {
+      const oy = (H - p.h) / 2;
+      x.save();
+      x.translate(ox + p.w / 2, oy + p.h / 2);
+      x.rotate(S.rot * Math.PI / 180);
+      x.drawImage(src, p.r.x * k, p.r.y * k, p.sw, p.sh, -p.sw / 2, -p.sh / 2, p.sw, p.sh);
+      x.restore();
+      const bx = ox + fs * 0.95, by = oy + fs * 0.95;
+      x.fillStyle = 'rgba(0, 0, 0, .58)';
+      x.beginPath(); x.arc(bx, by, fs * 0.64, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#fff';
+      x.font = `700 ${fs}px ui-monospace, Menlo, Consolas, monospace`;
+      x.textAlign = 'center';
+      x.textBaseline = 'middle';
+      x.fillText(String(n + 1), bx, by + fs * 0.04);
+    }
+    ox += p.w + gap;
+  });
+  cv.style.cursor = 'zoom-in';
+}
+
+function setView(v) {
+  view = v === 'split' ? 'split' : 'scan';
+  for (const b of document.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === view));
+  el.grid.classList.toggle('view-split', view === 'split');
+  el.sheetHint.textContent = view === 'split'
+    ? 'So kommen die Bilder ins ZIP. Ein Klick öffnet die Lupe, dort lässt sich die Linie verschieben.'
+    : 'Klicke oder ziehe im Bild, um die rote Linie zu setzen. Mit der Lupe prüfst du einen Scan in gross.';
+  try { localStorage.setItem(VIEW_STORE, view); } catch (e) { /* ohne Speicher weiter */ }
+  for (const it of items) if (it.pv) renderCard(it);
+}
+
 /* ---------- Karten ---------- */
 
 const STATE_TEXT = { load: 'Lädt', auto: 'Linie gefunden', check: 'Bitte prüfen', manual: 'Geprüft', error: 'Nicht lesbar', skip: 'Weggelassen' };
@@ -434,7 +487,7 @@ function renderCard(it) {
   if (it.pv) {
     ph.hidden = true;
     cv.hidden = false;
-    drawSplit(cv, it.pv, it);
+    if (view === 'split') drawResult(cv, it.pv, it); else drawSplit(cv, it.pv, it);
   } else if (it.state === 'error') {
     ph.className = 'ph err';
     ph.textContent = 'Dieses Format kann dein Browser nicht öffnen. Als JPG speichern hilft.';
@@ -476,6 +529,7 @@ function nudgeKey(e) {
 }
 
 function bindLine(cv, getIt, withKeys) {
+  const onSheet = withKeys;
   const set = (e) => {
     const it = getIt();
     if (!it || !it.pv) return;
@@ -485,6 +539,8 @@ function bindLine(cv, getIt, withKeys) {
   };
   cv.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
+    // In der Ansicht «Einzelbilder» öffnet ein Klick die Lupe, dort lässt sich die Linie setzen
+    if (onSheet && view === 'split') { openLoupe(getIt()); return; }
     cv.setPointerCapture(e.pointerId);
     set(e);
   });
@@ -492,7 +548,7 @@ function bindLine(cv, getIt, withKeys) {
   if (withKeys) {
     cv.addEventListener('keydown', (e) => {
       const it = getIt();
-      const d = nudgeKey(e);
+      const d = view === 'scan' ? nudgeKey(e) : 0;
       if (d && it && it.pv) { e.preventDefault(); setPos(it, it.pos + d, true); }
       if (e.key === 'Enter' && it && it.pv) { e.preventDefault(); openLoupe(it); }
     });
@@ -1063,6 +1119,10 @@ function initChangelog() {
 
 function init() {
   loadSettings();
+  let v = 'scan';
+  try { v = localStorage.getItem(VIEW_STORE) || 'scan'; } catch (e) { /* Standard */ }
+  setView(v);
+  for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => setView(b.dataset.view));
   initChangelog();
 
   el.pickDir.addEventListener('click', pickDir);

@@ -62,6 +62,10 @@
         <button id="sumCheck" class="pill warn" type="button" hidden></button>
       </div>
       <div class="tools">
+        <div class="seg" role="group" aria-label="Ansicht">
+          <button type="button" data-view="scan" aria-pressed="true">Scans</button>
+          <button type="button" data-view="split" aria-pressed="false">Einzelbilder</button>
+        </div>
         <details class="settings" id="settings">
           <summary class="btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
@@ -108,7 +112,7 @@
         <button id="reset" class="btn ghost" type="button">Neu beginnen</button>
       </div>
     </div>
-    <p class="sheet-hint">Klicke oder ziehe im Bild, um die rote Linie zu setzen. Mit der Lupe prüfst du einen Scan in gross.</p>
+    <p class="sheet-hint" id="sheetHint">Klicke oder ziehe im Bild, um die rote Linie zu setzen. Mit der Lupe prüfst du einen Scan in gross.</p>
     <div id="grid" class="grid"></div>
   </section>
 
