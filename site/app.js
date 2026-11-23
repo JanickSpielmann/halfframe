@@ -13,7 +13,7 @@ const POS_MIN = 0.05, POS_MAX = 0.95;
 const LINE = '#ff5236';
 const STORE = 'halfframe.settings';
 
-const S = { gap: 1, edge: 0, rot: 0, swap: false, fmt: 'jpeg', q: 0.95 };
+const S = { gap: 1, edge: 0, rot: 0, swap: false, fmt: 'jpeg', q: 0.95, rename: false, name: 'Film 1', useDate: true, label: 'Foto', date: '' };
 const items = [];
 let nextId = 1;
 let folderName = '';
@@ -35,6 +35,8 @@ const el = {
   settings: $('#settings'),
   gap: $('#sGap'), gapOut: $('#sGapOut'), edge: $('#sEdge'), edgeOut: $('#sEdgeOut'),
   rot: $('#sRot'), swap: $('#sSwap'), fmt: $('#sFmt'), q: $('#sQ'), qOut: $('#sQOut'), qField: $('#sQField'),
+  rename: $('#sRename'), nameFields: $('#nameFields'), nOff: $('#nOff'), nName: $('#nName'), nUseDate: $('#nUseDate'),
+  nDate: $('#nDate'), nDateField: $('#nDateField'), nLabel: $('#nLabel'), nExample: $('#nExample'),
   redetect: $('#redetect'),
   dock: $('#dock'), dockText: $('#dockText'), meter: $('#meter'), zip: $('#zip'), zipSub: $('#zipSub'),
   toast: $('#toast'), sheetHint: $('#sheetHint'),
@@ -104,9 +106,23 @@ function rotateOut(it, n) {
 // Breite des weggeschnittenen Stegs als Anteil: erkannt pro Scan, sonst aus den Einstellungen
 function gapOf(it) { return it.gap != null ? it.gap : S.gap / 100; }
 
-function outNames(it) {
+function isExported(i) { return !i.skip && i.pv && i.state !== 'error'; }
+
+// Datei Name ohne Zeichen, die in Dateinamen verboten sind
+function cleanName(t) { return String(t).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').replace(/\s+/g, ' ').trim(); }
+
+// Nummer 3 stellig, ab 1000 Bildern so viele Stellen wie nötig
+function numStr(n, total) { return String(n).padStart(Math.max(3, String(total).length), '0'); }
+
+// Namen der beiden Bilder eines Scans. Mit Umbenennen: «Name Datum Wort 001», durchgehend über alle Scans.
+function outNames(it, seq) {
   const ext = S.fmt === 'png' ? 'png' : 'jpg';
-  return [`${it.base}_1.${ext}`, `${it.base}_2.${ext}`];
+  if (!S.rename) return [`${it.base}_1.${ext}`, `${it.base}_2.${ext}`];
+  if (seq == null) { const list = items.filter(isExported); seq = list.indexOf(it); }
+  const total = items.filter(isExported).length * 2;
+  const head = [cleanName(S.name), S.useDate && S.date ? S.date : '', cleanName(S.label)].filter(Boolean).join(' ');
+  const first = Math.max(0, seq) * 2;
+  return [1, 2].map((k) => `${head ? head + ' ' : ''}${numStr(first + k, total)}.${ext}`);
 }
 
 /* ---------- Bilder lesen ---------- */
@@ -957,7 +973,7 @@ function save(blob, name) {
 async function exportZip() {
   if (exporting) return;
   await work;
-  const todo = items.filter((i) => !i.skip && i.pv && i.state !== 'error');
+  const todo = items.filter(isExported);
   if (!todo.length) { toast('Es gibt nichts zu speichern.', 'error'); return; }
 
   exporting = true;
@@ -980,7 +996,7 @@ async function exportZip() {
         full = await createImageBitmap(it.file);
         const { out } = layout(it, full.width, full.height);
         if (!out.every((r) => r.w >= 8 && r.h >= 8)) throw new Error('Schnitt zu klein');
-        const fn = outNames(it);
+        const fn = outNames(it, i);
         const rots = outRots(it);
         for (let n = 0; n < 2; n++) {
           const blob = await renderPart(full, out[n], type, rots[n]);
@@ -1036,6 +1052,15 @@ function readSettings(redraw = true) {
   el.edgeOut.textContent = S.edge.toFixed(1) + ' %';
   el.qOut.textContent = el.q.value;
   el.qField.hidden = S.fmt !== 'jpeg';
+  S.rename = el.rename.checked;
+  S.name = el.nName.value;
+  S.useDate = el.nUseDate.checked;
+  S.label = el.nLabel.value;
+  S.date = /^\d{4}-\d{2}-\d{2}$/.test(el.nDate.value) ? el.nDate.value : '';
+  el.nameFields.hidden = !S.rename;
+  el.nOff.hidden = S.rename;
+  el.nDateField.hidden = !S.useDate;
+  el.nExample.textContent = S.rename ? outNames({ base: 'x' }, 0)[0] : '';
   try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* ohne Speicher weiter */ }
   if (redraw) redrawAll();
 }
@@ -1050,8 +1075,15 @@ function loadSettings() {
       el.swap.checked = !!s.swap;
       if (s.fmt === 'png' || s.fmt === 'jpeg') el.fmt.value = s.fmt;
       if (typeof s.q === 'number') el.q.value = Math.round(s.q * 100);
+      el.rename.checked = !!s.rename;
+      if (typeof s.name === 'string') el.nName.value = s.name;
+      if (typeof s.useDate === 'boolean') el.nUseDate.checked = s.useDate;
+      if (typeof s.label === 'string') el.nLabel.value = s.label;
     }
   } catch (e) { /* Standardwerte */ }
+  // Datum: heute (lokal), wird nicht gespeichert
+  const d = new Date(), z = (n) => String(n).padStart(2, '0');
+  el.nDate.value = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
   readSettings(false);
 }
 
@@ -1189,8 +1221,10 @@ function init() {
     if (files.length) addFiles(files.map((f) => ({ file: f, rel: f.name })));
   });
 
-  for (const n of [el.gap, el.edge, el.q]) n.addEventListener('input', () => readSettings());
-  for (const n of [el.rot, el.swap, el.fmt]) n.addEventListener('change', () => readSettings());
+  for (const n of [el.gap, el.edge, el.q, el.nName, el.nLabel]) n.addEventListener('input', () => readSettings());
+  el.nDate.addEventListener('change', () => readSettings());
+  el.nDate.addEventListener('input', () => readSettings());
+  for (const n of [el.rot, el.swap, el.fmt, el.rename, el.nUseDate]) n.addEventListener('change', () => readSettings());
   el.redetect.addEventListener('click', () => {
     let ok = 0, n = 0;
     for (const it of items) if (it.pv) { n++; if (autoDetect(it)) ok++; renderCard(it); }

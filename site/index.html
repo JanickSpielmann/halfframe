@@ -102,6 +102,24 @@
               <input id="sQ" type="range" min="70" max="100" step="1" value="95">
             </label>
             <label class="check"><input id="sSwap" type="checkbox"> Reihenfolge tauschen (Bild 2 zuerst)</label>
+            <fieldset class="names">
+              <legend>Dateinamen</legend>
+              <label class="check"><input id="sRename" type="checkbox"> Beim Speichern umbenennen</label>
+              <div id="nameFields" class="names-fields" hidden>
+                <label class="field"><span>Name</span>
+                  <input id="nName" type="text" maxlength="60" value="Film 1" placeholder="Film 1" autocomplete="off">
+                </label>
+                <label class="check"><input id="nUseDate" type="checkbox" checked> Datum anhängen</label>
+                <label class="field" id="nDateField"><span>Datum</span>
+                  <input id="nDate" type="date">
+                </label>
+                <label class="field"><span>Wort vor der Nummer</span>
+                  <input id="nLabel" type="text" maxlength="30" value="Foto" placeholder="Foto" autocomplete="off">
+                </label>
+                <small>Beispiel: <code id="nExample"></code></small>
+              </div>
+              <small id="nOff">Ohne Umbenennen heissen die Dateien wie der Scan, mit <code>_1</code> und <code>_2</code> am Ende.</small>
+            </fieldset>
             <button id="redetect" class="btn small" type="button">Alle Linien neu suchen</button>
           </div>
         </details>

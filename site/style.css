@@ -218,6 +218,7 @@ body.dragging .strip { outline-color: var(--safe); transform: scale(1.01); }
 .settings-panel {
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 30;
   width: min(360px, 92vw); display: grid; gap: 16px; padding: 18px;
+  max-height: calc(100vh - 210px); overflow-y: auto; overscroll-behavior: contain;
   background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
   box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .55);
 }
@@ -229,6 +230,13 @@ body.dragging .strip { outline-color: var(--safe); transform: scale(1.01); }
 select { background: var(--raise); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; width: 100%; }
 input[type=range] { width: 100%; accent-color: var(--safe); }
 input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--safe); margin: 0; flex: none; }
+.names { display: grid; gap: 12px; margin: 0; padding: 12px 0 0; border: 0; border-top: 1px solid var(--line); min-width: 0; }
+.names legend { padding: 0 8px 0 0; font-size: .78rem; color: var(--faint); text-transform: uppercase; letter-spacing: .08em; float: left; width: 100%; margin-bottom: 4px; }
+.names-fields { display: grid; gap: 12px; }
+.names small { color: var(--faint); font-size: .78rem; line-height: 1.4; }
+.names code { font-family: var(--mono); color: var(--ink); word-break: break-all; }
+input[type=text], input[type=date] { background: var(--raise); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; width: 100%; color: var(--ink); font: inherit; color-scheme: dark light; }
+input[type=text]:focus-visible, input[type=date]:focus-visible { outline: 2px solid var(--safe); outline-offset: 1px; }
 .check { display: flex; align-items: center; gap: 10px; font-size: .9rem; cursor: pointer; }
 
 .grid { display: grid; gap: 18px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
