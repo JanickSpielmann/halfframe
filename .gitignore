@@ -1,0 +1,7 @@
+# Zugangsdaten gehören nicht ins Repo
+.env
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+desktop.ini

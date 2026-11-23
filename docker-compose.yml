@@ -1,0 +1,19 @@
+name: halfframe
+
+services:
+  web:
+    image: nginx:1.27-alpine
+    container_name: halfframe
+    restart: unless-stopped
+    volumes:
+      # Nur der Ordner site/ wird ausgeliefert, nicht das ganze Repo. Nach einem git pull ist alles sofort live.
+      - ./site:/usr/share/nginx/html:ro
+      # Ordner statt Einzeldatei: Eine einzeln eingebundene Datei sieht der Container nach einem git pull nicht mehr.
+      - ./nginx:/etc/nginx/conf.d:ro
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    # Gemeinsames Netzwerk mit Caddy, auf HP-Winkel schon vorhanden
+    external: true
