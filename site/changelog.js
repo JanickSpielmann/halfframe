@@ -4,6 +4,7 @@
    Der erste Eintrag bestimmt die Version unten auf der Seite.
    Zählung: Die erste Zahl steigt bei einer neuen Gestaltung, sonst zählt die letzte Zahl hoch. */
 const CHANGELOG = [
+  { version: '2.3.3', date: '23.11.2026', text: 'Die Leertaste zentriert die Linie jetzt immer, auch wenn du zuletzt auf einen Dreh Knopf geklickt hast.' },
   { version: '2.3.2', date: '23.11.2026', text: 'Die Zahlen 1 und 2 sind jetzt Abzeichen und überall gleich gross, ebenso die Dreh Knöpfe. Die Grösse hängt nicht mehr vom Scan ab.' },
   { version: '2.3.1', date: '23.11.2026', text: 'Die Dreh Knöpfe sitzen jetzt direkt auf den Bildern, oben rechts. Ist ein Bild gedreht, zeigt der Knopf die Gradzahl. Die Lupe passt besser auf kleinere Bildschirme, die Vorschauen unten sind wieder ganz sichtbar.' },
   { version: '2.3.0', date: '23.11.2026', text: 'Jedes Einzelbild lässt sich drehen, je 90° nach rechts: in der Ansicht «Einzelbilder» mit den Knöpfen unter dem Scan, in der Lupe mit «Drehen» unter dem Bild oder den Tasten 1 und 2. Die Drehung in den Einstellungen gilt weiterhin für alle Bilder und kommt dazu.' },

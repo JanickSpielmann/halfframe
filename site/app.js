@@ -1238,11 +1238,14 @@ function init() {
     const d = nudgeKey(e);
     if (d) { e.preventDefault(); setPos(loupe, loupe.pos + d, true); return; }
     if (e.key === 'Enter' && t !== 'BUTTON') { e.preventDefault(); step(1, true); }
-    if (e.key === ' ' && t !== 'BUTTON' && t !== 'INPUT') { e.preventDefault(); setPos(loupe, 0.5, true); }
+    // Leertaste zentriert immer, auch wenn zuletzt ein Knopf (zum Beispiel Drehen) angeklickt wurde
+    if (e.key === ' ' && t !== 'INPUT') { e.preventDefault(); setPos(loupe, 0.5, true); }
     if (e.key === '1' || e.key === '2') { e.preventDefault(); rotateOut(loupe, +e.key - 1); }
     if (e.key === 'PageDown') { e.preventDefault(); step(1, false); }
     if (e.key === 'PageUp') { e.preventDefault(); step(-1, false); }
   });
+  // Ein Knopf mit Fokus würde die Leertaste beim Loslassen als Klick auswerten (Firefox), das verhindern wir
+  el.dlg.addEventListener('keyup', (e) => { if (e.key === ' ' && e.target.tagName === 'BUTTON') e.preventDefault(); });
   el.dlg.addEventListener('click', (e) => { if (e.target === el.dlg) el.dlg.close(); });
   el.dlg.addEventListener('close', () => {
     const it = loupe;
