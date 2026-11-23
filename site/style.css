@@ -279,18 +279,22 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--safe); mar
 .cv-wrap, .l-wrap { position: relative; }
 .l-wrap { line-height: 0; }
 .rotbtn {
-  position: absolute; z-index: 2; transform: translate(calc(-100% - 8px), 8px);
+  position: absolute; z-index: 2; transform: translate(calc(-100% - 6px), 6px);
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  height: 34px; min-width: 34px; padding: 0 9px; border: 0; border-radius: 999px;
+  height: 30px; min-width: 30px; padding: 0 8px; border: 0; border-radius: 999px;
   background: rgba(12, 10, 8, .72); color: #fff; font: 600 12px/1 var(--mono);
   -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
   transition: background .15s, transform .15s;
 }
-.rotbtn svg { width: 17px; height: 17px; flex: none; }
+.rotbtn svg { width: 15px; height: 15px; flex: none; }
+.numbadge {
+  position: absolute; z-index: 2; transform: translate(6px, 6px); pointer-events: none;
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(12, 10, 8, .72); color: #fff; font: 700 14px/1 var(--mono);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
 .rotbtn:hover { background: var(--safe); }
 .rotbtn .deg:empty { display: none; }
-.cv-wrap .rotbtn { height: 28px; min-width: 28px; padding: 0 7px; transform: translate(calc(-100% - 5px), 5px); }
-.cv-wrap .rotbtn svg { width: 14px; height: 14px; }
 .view-split .lupe { display: none; }
 .meta { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 4px 2px; }
 .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }

@@ -40,7 +40,7 @@ const el = {
   toast: $('#toast'), sheetHint: $('#sheetHint'),
   dlg: $('#loupe'), lCanvas: $('#lCanvas'), lName: $('#lName'), lIdx: $('#lIdx'), lPos: $('#lPos'),
   lPrev: $('#lPrev'), lNext: $('#lNext'), lClose: $('#lClose'), lDir: $('#lDir'), lFind: $('#lFind'),
-  lMid: $('#lMid'), lRot0: $('#lRot0'), lRot1: $('#lRot1'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
+  lMid: $('#lMid'), lRot0: $('#lRot0'), lRot1: $('#lRot1'), lNum0: $('#lNum0'), lNum1: $('#lNum1'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
   lGap: $('#lGap'), lA: $('#lA'), lB: $('#lB'), lCapA: $('#lCapA'), lCapB: $('#lCapB'), lState: $('#lState'),
 };
 
@@ -364,21 +364,6 @@ function drawSplit(cv, src, it) {
   x.moveTo(...p(rad * 0.2, -rad * 0.35)); x.lineTo(...p(rad * 0.5, 0)); x.lineTo(...p(rad * 0.2, rad * 0.35));
   x.stroke();
 
-  // Nummern der beiden Bilder
-  const labels = S.swap ? ['2', '1'] : ['1', '2'];
-  const fs = Math.max(11, Math.round(Math.min(W, H) / 16));
-  x.font = `700 ${fs}px ui-monospace, Menlo, Consolas, monospace`;
-  x.textAlign = 'center';
-  x.textBaseline = 'middle';
-  R.forEach((r, n) => {
-    if (r.w < fs * 2 || r.h < fs * 2) return;
-    const bx = r.x + fs * 0.95, by = r.y + fs * 0.95;
-    x.fillStyle = 'rgba(0, 0, 0, .58)';
-    x.beginPath(); x.arc(bx, by, fs * 0.64, 0, Math.PI * 2); x.fill();
-    x.fillStyle = '#fff';
-    x.fillText(labels[n], bx, by + fs * 0.04);
-  });
-
   cv.style.cursor = o === 'v' ? 'col-resize' : 'row-resize';
 }
 
@@ -414,10 +399,9 @@ function drawResult(cv, src, it) {
   const x = cv.getContext('2d');
   x.clearRect(0, 0, W, H);
   let ox = 0;
-  const fs = Math.max(11, Math.round(Math.max(W, H) / 30));
   it.resPos = parts.map((p, n) => {
     const left = n === 0 ? 0 : parts[0].w + gap;
-    return { x: (left + p.w) / W, y: ((H - p.h) / 2) / H };
+    return { lx: left / W, x: (left + p.w) / W, y: ((H - p.h) / 2) / H };
   });
   parts.forEach((p, n) => {
     if (p.sw >= 2 && p.sh >= 2) {
@@ -427,14 +411,6 @@ function drawResult(cv, src, it) {
       x.rotate(p.rot * Math.PI / 180);
       x.drawImage(src, p.r.x * k, p.r.y * k, p.sw, p.sh, -p.sw / 2, -p.sh / 2, p.sw, p.sh);
       x.restore();
-      const bx = ox + fs * 0.95, by = oy + fs * 0.95;
-      x.fillStyle = 'rgba(0, 0, 0, .58)';
-      x.beginPath(); x.arc(bx, by, fs * 0.64, 0, Math.PI * 2); x.fill();
-      x.fillStyle = '#fff';
-      x.font = `700 ${fs}px ui-monospace, Menlo, Consolas, monospace`;
-      x.textAlign = 'center';
-      x.textBaseline = 'middle';
-      x.fillText(String(n + 1), bx, by + fs * 0.04);
     }
     ox += p.w + gap;
   });
@@ -451,6 +427,27 @@ function placeRotButtons(btns, pos, rots) {
     b.style.top = (p.y * 100) + '%';
     $('.deg', b).textContent = rots[n] ? rots[n] + '°' : '';
   });
+}
+
+// Zahlen 1 und 2 oben links auf die beiden Bilder setzen. pos: Anteile der Canvas (linke und obere Kante).
+function placeNumbers(spans, pos, labels) {
+  spans.forEach((b, n) => {
+    const p = pos && pos[n];
+    if (!p) { b.hidden = true; return; }
+    b.hidden = false;
+    b.style.left = (p.lx * 100) + '%';
+    b.style.top = (p.y * 100) + '%';
+    b.textContent = labels[n];
+  });
+}
+
+// Linke obere Ecke der beiden Teile im Scan (A, B), mit der Nummer, unter der sie ins ZIP kommen
+function scanNumbers(it) {
+  const { A, B } = layout(it);
+  return {
+    pos: [A, B].map((r) => (r.w > 0 && r.h > 0 ? { lx: r.x / it.w, y: r.y / it.h } : null)),
+    labels: S.swap ? ['2', '1'] : ['1', '2'],
+  };
 }
 
 function setView(v) {
@@ -490,6 +487,7 @@ function buildCard(it) {
       <div class="ph"></div>
       <div class="cv-wrap">
         <canvas class="cv" tabindex="0" hidden></canvas>
+        <span class="numbadge" hidden></span><span class="numbadge" hidden></span>
         <button class="rotbtn" type="button" data-n="0" title="Bild 1 um 90° drehen" hidden>${ROT_ICON}<span class="deg"></span></button>
         <button class="rotbtn" type="button" data-n="1" title="Bild 2 um 90° drehen" hidden>${ROT_ICON}<span class="deg"></span></button>
       </div>
@@ -530,6 +528,10 @@ function renderCard(it) {
   chip.dataset.state = st;
   chip.textContent = STATE_TEXT[st];
   $('.lupe', card).disabled = !it.pv;
+  const nums = [...card.querySelectorAll('.numbadge')];
+  if (!it.pv) nums.forEach((b) => { b.hidden = true; });
+  else if (view === 'split') placeNumbers(nums, it.resPos, ['1', '2']);
+  else { const sn = scanNumbers(it); placeNumbers(nums, sn.pos, sn.labels); }
   const btns = card.querySelectorAll('.rotbtn');
   if (!it.pv || view !== 'split') btns.forEach((b) => { b.hidden = true; });
   else placeRotButtons(btns, it.resPos, outRots(it));
@@ -812,6 +814,8 @@ function paintLoupe() {
   const { out } = layout(it);
   const k = src.width / it.w;
   const rots = outRots(it);
+  const sn = scanNumbers(it);
+  placeNumbers([el.lNum0, el.lNum1], sn.pos, sn.labels);
   placeRotButtons([el.lRot0, el.lRot1], out.map((r) => ({ x: (r.x + r.w) / it.w, y: r.y / it.h })), rots);
   drawPart(el.lA, src, out[0], k, 300, rots[0]);
   drawPart(el.lB, src, out[1], k, 300, rots[1]);
