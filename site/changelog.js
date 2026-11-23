@@ -4,6 +4,7 @@
    Der erste Eintrag bestimmt die Version unten auf der Seite.
    Zählung: Die erste Zahl steigt bei einer neuen Gestaltung, sonst zählt die letzte Zahl hoch. */
 const CHANGELOG = [
+  { version: '2.3.0', date: '23.11.2026', text: 'Jedes Einzelbild lässt sich drehen, je 90° nach rechts: in der Ansicht «Einzelbilder» mit den Knöpfen unter dem Scan, in der Lupe mit «Drehen» unter dem Bild oder den Tasten 1 und 2. Die Drehung in den Einstellungen gilt weiterhin für alle Bilder und kommt dazu.' },
   { version: '2.2.2', date: '23.11.2026', text: 'Die Option «Weglassen» ist entfernt. Es kommen immer alle lesbaren Scans ins ZIP.' },
   { version: '2.2.1', date: '23.11.2026', text: 'Die Leertaste setzt die Linie in die Mitte, in der Lupe und auf einer ausgewählten Karte.' },
   { version: '2.2.0', date: '23.11.2026', text: 'Neue Ansicht «Einzelbilder»: Oben über dem Kontaktbogen lässt sich umschalten. Statt des Scans mit Linie zeigt jede Karte dann die beiden fertigen Bilder nebeneinander, so wie sie ins ZIP kommen, mit Drehung und Reihenfolge. Ein Klick öffnet die Lupe. Die gewählte Ansicht bleibt gespeichert.' },

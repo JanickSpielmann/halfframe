@@ -275,6 +275,16 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--safe); mar
 .lupe:disabled { display: none; }
 @media (hover: none) { .lupe { opacity: 1; } }
 
+.rots { display: none; gap: 8px; padding: 0 4px; }
+.view-split .rots { display: flex; }
+.rots button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--raise); color: var(--muted);
+  border-radius: 9px; padding: 6px 10px; font-size: .82rem; font-weight: 600;
+}
+.rots button:hover:not(:disabled) { color: var(--ink); border-color: var(--faint); }
+.rots button:disabled { opacity: .4; cursor: not-allowed; }
+.rots svg { width: 15px; height: 15px; }
 .meta { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 4px 2px; }
 .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
 .chip {
@@ -364,7 +374,8 @@ body:not(.has-items) .toast { bottom: 24px; }
   display: block; max-width: 220px; max-height: 130px; width: auto; height: auto;
   border-radius: 4px; background: var(--film); box-shadow: var(--shadow);
 }
-.l-out figcaption { font-family: var(--mono); font-size: .76rem; color: var(--muted); }
+.l-out figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--mono); font-size: .76rem; color: var(--muted); }
+.l-out figcaption .btn { font-family: var(--sans); padding: 5px 9px; }
 .keys { margin: 0 0 0 auto; color: var(--faint); font-size: .8rem; }
 kbd {
   font-family: var(--mono); font-size: .74rem; color: var(--muted);

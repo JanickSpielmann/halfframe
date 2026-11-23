@@ -24,6 +24,7 @@ let loupe = null;
 let view = 'scan';   // 'scan': Scan mit Linie, 'split': die beiden fertigen Bilder
 const VIEW_STORE = 'halfframe.view';
 
+const ROT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4v7h-7"/></svg>';
 const ZOOM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8.5v5M8.5 11h5"/></svg>';
 
 const el = {
@@ -39,7 +40,7 @@ const el = {
   toast: $('#toast'), sheetHint: $('#sheetHint'),
   dlg: $('#loupe'), lCanvas: $('#lCanvas'), lName: $('#lName'), lIdx: $('#lIdx'), lPos: $('#lPos'),
   lPrev: $('#lPrev'), lNext: $('#lNext'), lClose: $('#lClose'), lDir: $('#lDir'), lFind: $('#lFind'),
-  lMid: $('#lMid'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
+  lMid: $('#lMid'), lRotA: $('#lRotA'), lRotB: $('#lRotB'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
   lGap: $('#lGap'), lA: $('#lA'), lB: $('#lB'), lCapA: $('#lCapA'), lCapB: $('#lCapB'), lState: $('#lState'),
 };
 
@@ -84,6 +85,20 @@ function layout(it, w = it.w, h = it.h) {
     B = { x: m, y: b0, w: w - 2 * m, h: h - m - b0 };
   }
   return { o, A, B, out: S.swap ? [B, A] : [A, B] };
+}
+
+// Drehung der beiden Ausgabebilder in Grad: Grundwert aus den Einstellungen plus Drehung pro Bild.
+// it.rot gilt pro Teil im Scan (0: links oder oben, 1: rechts oder unten), damit «Reihenfolge tauschen» sie nicht vertauscht.
+function outRots(it) {
+  const r = it.rot.map((v) => (S.rot + v) % 360);
+  return S.swap ? [r[1], r[0]] : r;
+}
+
+function rotateOut(it, n) {
+  const phys = S.swap ? 1 - n : n;
+  it.rot[phys] = (it.rot[phys] + 90) % 360;
+  renderCard(it);
+  drawLoupe();
 }
 
 // Breite des weggeschnittenen Stegs als Anteil: erkannt pro Scan, sonst aus den Einstellungen
@@ -367,17 +382,17 @@ function drawSplit(cv, src, it) {
   cv.style.cursor = o === 'v' ? 'col-resize' : 'row-resize';
 }
 
-function drawPart(cv, src, r, k, max) {
+function drawPart(cv, src, r, k, max, rot) {
   if (r.w < 8 || r.h < 8) { cv.width = 1; cv.height = 1; return; }
   const sw = r.w * k, sh = r.h * k;
-  const turned = S.rot % 180 !== 0;
+  const turned = rot % 180 !== 0;
   const rw = turned ? sh : sw, rh = turned ? sw : sh;
   const f = Math.min(1, max / Math.max(rw, rh));
   cv.width = Math.max(1, Math.round(rw * f));
   cv.height = Math.max(1, Math.round(rh * f));
   const x = cv.getContext('2d');
   x.translate(cv.width / 2, cv.height / 2);
-  x.rotate(S.rot * Math.PI / 180);
+  x.rotate(rot * Math.PI / 180);
   x.drawImage(src, r.x * k, r.y * k, sw, sh, -sw * f / 2, -sh * f / 2, sw * f, sh * f);
 }
 
@@ -385,10 +400,11 @@ function drawPart(cv, src, r, k, max) {
 function drawResult(cv, src, it) {
   const k = src.width / it.w;
   const { out } = layout(it);
-  const turned = S.rot % 180 !== 0;
-  const parts = out.map((r) => {
+  const rots = outRots(it);
+  const parts = out.map((r, n) => {
     const sw = Math.max(0, r.w * k), sh = Math.max(0, r.h * k);
-    return { r, sw, sh, w: turned ? sh : sw, h: turned ? sw : sh };
+    const turned = rots[n] % 180 !== 0;
+    return { r, sw, sh, rot: rots[n], w: turned ? sh : sw, h: turned ? sw : sh };
   });
   const gap = Math.round(Math.max(parts[0].w, parts[1].w, 1) * 0.06);
   const W = Math.max(1, Math.round(parts[0].w + parts[1].w + gap));
@@ -404,7 +420,7 @@ function drawResult(cv, src, it) {
       const oy = (H - p.h) / 2;
       x.save();
       x.translate(ox + p.w / 2, oy + p.h / 2);
-      x.rotate(S.rot * Math.PI / 180);
+      x.rotate(p.rot * Math.PI / 180);
       x.drawImage(src, p.r.x * k, p.r.y * k, p.sw, p.sh, -p.sw / 2, -p.sh / 2, p.sw, p.sh);
       x.restore();
       const bx = ox + fs * 0.95, by = oy + fs * 0.95;
@@ -445,7 +461,7 @@ function makeItem({ file, rel }) {
     id: nextId++, file, rel, name,
     dir: slash >= 0 ? rel.slice(0, slash + 1) : '',
     base: (dot > 0 ? name.slice(0, dot) : name) || 'bild',
-    w: 0, h: 0, pv: null, big: null, pos: 0.5, gap: null, how: '', orient: 'auto',
+    w: 0, h: 0, pv: null, big: null, pos: 0.5, gap: null, rot: [0, 0], how: '', orient: 'auto',
     state: 'load', skip: false, dead: false, no: 0, card: null,
   };
 }
@@ -460,6 +476,10 @@ function buildCard(it) {
       <button class="lupe" type="button" title="Gross prüfen" aria-label="Gross prüfen" disabled>${ZOOM_ICON}</button>
       <span class="edge" aria-hidden="true"></span>
     </div>
+    <div class="rots" role="group" aria-label="Einzelbilder drehen">
+      <button type="button" data-n="0" title="Bild 1 um 90° drehen">${ROT_ICON}<span>Bild 1</span></button>
+      <button type="button" data-n="1" title="Bild 2 um 90° drehen">${ROT_ICON}<span>Bild 2</span></button>
+    </div>
     <div class="meta">
       <span class="name"></span>
       <span class="chip"></span>
@@ -471,6 +491,7 @@ function buildCard(it) {
   cv.setAttribute('aria-label', `Trennlinie von ${it.name}. Klicken oder ziehen, Pfeiltasten verschieben fein.`);
   bindLine(cv, () => it, true);
   $('.lupe', card).addEventListener('click', () => openLoupe(it));
+  for (const b of card.querySelectorAll('.rots button')) b.addEventListener('click', () => rotateOut(it, +b.dataset.n));
   it.card = card;
   return card;
 }
@@ -493,6 +514,7 @@ function renderCard(it) {
   chip.dataset.state = st;
   chip.textContent = STATE_TEXT[st];
   $('.lupe', card).disabled = !it.pv;
+  for (const b of card.querySelectorAll('.rots button')) b.disabled = !it.pv;
   $('.edge', card).textContent = `${pad2(it.no)}  ▸  ${pad2(it.no)}A`;
 }
 
@@ -771,8 +793,9 @@ function paintLoupe() {
   el.lState.textContent = STATE_TEXT[st];
   const { out } = layout(it);
   const k = src.width / it.w;
-  drawPart(el.lA, src, out[0], k, 300);
-  drawPart(el.lB, src, out[1], k, 300);
+  const rots = outRots(it);
+  drawPart(el.lA, src, out[0], k, 300, rots[0]);
+  drawPart(el.lB, src, out[1], k, 300, rots[1]);
   const names = outNames(it);
   el.lCapA.textContent = names[0];
   el.lCapB.textContent = names[1];
@@ -868,15 +891,15 @@ class Zip {
   }
 }
 
-function renderPart(bmp, r, type) {
-  const turned = S.rot % 180 !== 0;
+function renderPart(bmp, r, type, rot) {
+  const turned = rot % 180 !== 0;
   const cw = turned ? r.h : r.w, ch = turned ? r.w : r.h;
   const c = document.createElement('canvas');
   c.width = cw; c.height = ch;
   const x = c.getContext('2d');
   if (type === 'image/jpeg') { x.fillStyle = '#fff'; x.fillRect(0, 0, cw, ch); }
   x.translate(cw / 2, ch / 2);
-  x.rotate(S.rot * Math.PI / 180);
+  x.rotate(rot * Math.PI / 180);
   x.drawImage(bmp, r.x, r.y, r.w, r.h, -r.w / 2, -r.h / 2, r.w, r.h);
   return new Promise((res, rej) => c.toBlob((b) => {
     c.width = 0; c.height = 0;
@@ -935,8 +958,9 @@ async function exportZip() {
         const { out } = layout(it, full.width, full.height);
         if (!out.every((r) => r.w >= 8 && r.h >= 8)) throw new Error('Schnitt zu klein');
         const fn = outNames(it);
+        const rots = outRots(it);
         for (let n = 0; n < 2; n++) {
-          const blob = await renderPart(full, out[n], type);
+          const blob = await renderPart(full, out[n], type, rots[n]);
           await zip.add(uniquePath(it.dir + fn[n], used), blob);
           files++;
         }
@@ -1170,6 +1194,8 @@ function init() {
   el.lMinus.addEventListener('click', () => loupe && setPos(loupe, loupe.pos - 0.001, true));
   el.lPlus.addEventListener('click', () => loupe && setPos(loupe, loupe.pos + 0.001, true));
   el.lMid.addEventListener('click', () => loupe && setPos(loupe, 0.5, true));
+  el.lRotA.addEventListener('click', () => loupe && rotateOut(loupe, 0));
+  el.lRotB.addEventListener('click', () => loupe && rotateOut(loupe, 1));
   el.lFind.addEventListener('click', () => {
     if (!loupe) return;
     const sure = autoDetect(loupe);
@@ -1190,6 +1216,7 @@ function init() {
     if (d) { e.preventDefault(); setPos(loupe, loupe.pos + d, true); return; }
     if (e.key === 'Enter' && t !== 'BUTTON') { e.preventDefault(); step(1, true); }
     if (e.key === ' ' && t !== 'BUTTON' && t !== 'INPUT') { e.preventDefault(); setPos(loupe, 0.5, true); }
+    if (e.key === '1' || e.key === '2') { e.preventDefault(); rotateOut(loupe, +e.key - 1); }
     if (e.key === 'PageDown') { e.preventDefault(); step(1, false); }
     if (e.key === 'PageUp') { e.preventDefault(); step(-1, false); }
   });
