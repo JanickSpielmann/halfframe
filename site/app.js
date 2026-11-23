@@ -40,7 +40,7 @@ const el = {
   toast: $('#toast'), sheetHint: $('#sheetHint'),
   dlg: $('#loupe'), lCanvas: $('#lCanvas'), lName: $('#lName'), lIdx: $('#lIdx'), lPos: $('#lPos'),
   lPrev: $('#lPrev'), lNext: $('#lNext'), lClose: $('#lClose'), lDir: $('#lDir'), lFind: $('#lFind'),
-  lMid: $('#lMid'), lRotA: $('#lRotA'), lRotB: $('#lRotB'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
+  lMid: $('#lMid'), lRot0: $('#lRot0'), lRot1: $('#lRot1'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
   lGap: $('#lGap'), lA: $('#lA'), lB: $('#lB'), lCapA: $('#lCapA'), lCapB: $('#lCapB'), lState: $('#lState'),
 };
 
@@ -415,6 +415,10 @@ function drawResult(cv, src, it) {
   x.clearRect(0, 0, W, H);
   let ox = 0;
   const fs = Math.max(11, Math.round(Math.max(W, H) / 30));
+  it.resPos = parts.map((p, n) => {
+    const left = n === 0 ? 0 : parts[0].w + gap;
+    return { x: (left + p.w) / W, y: ((H - p.h) / 2) / H };
+  });
   parts.forEach((p, n) => {
     if (p.sw >= 2 && p.sh >= 2) {
       const oy = (H - p.h) / 2;
@@ -435,6 +439,18 @@ function drawResult(cv, src, it) {
     ox += p.w + gap;
   });
   cv.style.cursor = 'zoom-in';
+}
+
+// Dreh Knöpfe oben rechts auf die beiden Bilder setzen. pos: Anteile der Canvas (rechte Kante, obere Kante).
+function placeRotButtons(btns, pos, rots) {
+  btns.forEach((b, n) => {
+    const p = pos && pos[n];
+    if (!p) { b.hidden = true; return; }
+    b.hidden = false;
+    b.style.left = (p.x * 100) + '%';
+    b.style.top = (p.y * 100) + '%';
+    $('.deg', b).textContent = rots[n] ? rots[n] + '°' : '';
+  });
 }
 
 function setView(v) {
@@ -472,13 +488,13 @@ function buildCard(it) {
   card.innerHTML = `
     <div class="film">
       <div class="ph"></div>
-      <canvas class="cv" tabindex="0" hidden></canvas>
+      <div class="cv-wrap">
+        <canvas class="cv" tabindex="0" hidden></canvas>
+        <button class="rotbtn" type="button" data-n="0" title="Bild 1 um 90° drehen" hidden>${ROT_ICON}<span class="deg"></span></button>
+        <button class="rotbtn" type="button" data-n="1" title="Bild 2 um 90° drehen" hidden>${ROT_ICON}<span class="deg"></span></button>
+      </div>
       <button class="lupe" type="button" title="Gross prüfen" aria-label="Gross prüfen" disabled>${ZOOM_ICON}</button>
       <span class="edge" aria-hidden="true"></span>
-    </div>
-    <div class="rots" role="group" aria-label="Einzelbilder drehen">
-      <button type="button" data-n="0" title="Bild 1 um 90° drehen">${ROT_ICON}<span>Bild 1</span></button>
-      <button type="button" data-n="1" title="Bild 2 um 90° drehen">${ROT_ICON}<span>Bild 2</span></button>
     </div>
     <div class="meta">
       <span class="name"></span>
@@ -491,7 +507,7 @@ function buildCard(it) {
   cv.setAttribute('aria-label', `Trennlinie von ${it.name}. Klicken oder ziehen, Pfeiltasten verschieben fein.`);
   bindLine(cv, () => it, true);
   $('.lupe', card).addEventListener('click', () => openLoupe(it));
-  for (const b of card.querySelectorAll('.rots button')) b.addEventListener('click', () => rotateOut(it, +b.dataset.n));
+  for (const b of card.querySelectorAll('.rotbtn')) b.addEventListener('click', (e) => { e.stopPropagation(); rotateOut(it, +b.dataset.n); });
   it.card = card;
   return card;
 }
@@ -514,7 +530,9 @@ function renderCard(it) {
   chip.dataset.state = st;
   chip.textContent = STATE_TEXT[st];
   $('.lupe', card).disabled = !it.pv;
-  for (const b of card.querySelectorAll('.rots button')) b.disabled = !it.pv;
+  const btns = card.querySelectorAll('.rotbtn');
+  if (!it.pv || view !== 'split') btns.forEach((b) => { b.hidden = true; });
+  else placeRotButtons(btns, it.resPos, outRots(it));
   $('.edge', card).textContent = `${pad2(it.no)}  ▸  ${pad2(it.no)}A`;
 }
 
@@ -794,6 +812,7 @@ function paintLoupe() {
   const { out } = layout(it);
   const k = src.width / it.w;
   const rots = outRots(it);
+  placeRotButtons([el.lRot0, el.lRot1], out.map((r) => ({ x: (r.x + r.w) / it.w, y: r.y / it.h })), rots);
   drawPart(el.lA, src, out[0], k, 300, rots[0]);
   drawPart(el.lB, src, out[1], k, 300, rots[1]);
   const names = outNames(it);
@@ -1194,8 +1213,8 @@ function init() {
   el.lMinus.addEventListener('click', () => loupe && setPos(loupe, loupe.pos - 0.001, true));
   el.lPlus.addEventListener('click', () => loupe && setPos(loupe, loupe.pos + 0.001, true));
   el.lMid.addEventListener('click', () => loupe && setPos(loupe, 0.5, true));
-  el.lRotA.addEventListener('click', () => loupe && rotateOut(loupe, 0));
-  el.lRotB.addEventListener('click', () => loupe && rotateOut(loupe, 1));
+  el.lRot0.addEventListener('click', () => loupe && rotateOut(loupe, 0));
+  el.lRot1.addEventListener('click', () => loupe && rotateOut(loupe, 1));
   el.lFind.addEventListener('click', () => {
     if (!loupe) return;
     const sure = autoDetect(loupe);

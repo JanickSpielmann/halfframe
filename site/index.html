@@ -147,7 +147,13 @@
     <span id="lState" class="chip"></span>
     <button id="lClose" class="icon" type="button" aria-label="Schliessen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </div>
-  <div class="l-stage"><canvas id="lCanvas" tabindex="0" aria-label="Scan mit Trennlinie. Klicken oder ziehen, Pfeiltasten verschieben fein."></canvas></div>
+  <div class="l-stage">
+    <div class="l-wrap">
+      <canvas id="lCanvas" tabindex="0" aria-label="Scan mit Trennlinie. Klicken oder ziehen, Pfeiltasten verschieben fein."></canvas>
+      <button id="lRot0" class="rotbtn" type="button" title="Bild 1 um 90° drehen (Taste 1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4v7h-7"/></svg><span class="deg"></span></button>
+      <button id="lRot1" class="rotbtn" type="button" title="Bild 2 um 90° drehen (Taste 2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4v7h-7"/></svg><span class="deg"></span></button>
+    </div>
+  </div>
   <div class="l-tools">
     <div class="nudge" role="group" aria-label="Linie fein verschieben">
       <button id="lMinus" class="icon" type="button" aria-label="Linie ein wenig zurück"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg></button>
@@ -166,8 +172,8 @@
     <button id="lOk" class="btn primary" type="button">Passt, weiter</button>
   </div>
   <div class="l-out">
-    <figure><canvas id="lA"></canvas><figcaption><span id="lCapA"></span><button id="lRotA" class="btn small" type="button" title="Bild 1 um 90° drehen (Taste 1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4v7h-7"/></svg>Drehen</button></figcaption></figure>
-    <figure><canvas id="lB"></canvas><figcaption><span id="lCapB"></span><button id="lRotB" class="btn small" type="button" title="Bild 2 um 90° drehen (Taste 2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4v7h-7"/></svg>Drehen</button></figcaption></figure>
+    <figure><canvas id="lA"></canvas><figcaption id="lCapA"></figcaption></figure>
+    <figure><canvas id="lB"></canvas><figcaption id="lCapB"></figcaption></figure>
     <p class="keys"><kbd>←</kbd><kbd>→</kbd> fein verschieben · <kbd>Shift</kbd> grösser · <kbd>Leertaste</kbd> Mitte · <kbd>1</kbd><kbd>2</kbd> Bild drehen · <kbd>Enter</kbd> passt, weiter · <kbd>Esc</kbd> schliessen</p>
   </div>
 </dialog>
