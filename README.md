@@ -6,9 +6,9 @@ Eine Seite, auf der man einen Ordner mit Scans von Half Frame Filmen wählt und 
 
 | Pfad | Zweck |
 |---|---|
-| `site/index.html` | Aufbau der Seite |
-| `site/app.js` | Ordner lesen, Schnittlinie, automatische Suche des Streifens, Export (Ordner oder ZIP) |
-| `site/style.css` | Aussehen |
+| `site/index.html` | Aufbau der Seite: Start mit Ablagefläche, Kontaktbogen, Lupe |
+| `site/app.js` | Scans lesen, Trennlinie suchen und setzen, ZIP erzeugen |
+| `site/style.css` | Aussehen (dunkel: Dunkelkammer, hell: Leuchttisch, folgt der Einstellung des Geräts) |
 | `site/favicon.svg` | Symbol |
 | `nginx/default.conf` | Konfiguration des Webservers (kein Cache für Seiten, `noindex`) |
 | `docker-compose.yml` | nginx Container `halfframe`, hängt am Netzwerk `proxy` (Caddy) |
@@ -16,13 +16,13 @@ Eine Seite, auf der man einen Ordner mit Scans von Half Frame Filmen wählt und 
 
 ## Verhalten der Seite
 
-* Ein Scan mit zwei Bildern nebeneinander wird senkrecht geteilt (A links, B rechts). Hochkant gescannte Streifen werden waagrecht geteilt. Die Richtung ist umschaltbar.
-* Die Schnittlinie lässt sich pro Bild ziehen. Dazu kommen Mittelstreifen, Aussenrand, Drehung und Tauschen von A und B.
-* «Streifen automatisch suchen» sucht in der Bildmitte die Spalte, die sich am stärksten abhebt. Das ist ein Hilfsmittel und kann danebenliegen.
-* Ausgabe: `<name>_a.jpg` und `<name>_b.jpg` (oder PNG). Unterordner bleiben erhalten.
-* Chrome, Edge, Brave: Die Ergebnisse werden in den Unterordner `geschnitten` des gewählten Ordners geschrieben (der Browser fragt einmal nach der Schreiberlaubnis). Andere Browser: ZIP Dateien, je rund 400 MB.
-* Formate: JPG, PNG, WebP. TIFF können Browser nicht lesen, solche Dateien werden übersprungen.
-* Metadaten (EXIF) werden nicht in die neuen Bilder übernommen. JPG wird neu kodiert, also einmal verlustbehaftet gespeichert (Qualität einstellbar, PNG ist verlustfrei).
+* Ordner wählen, Ordner hineinziehen oder einzelne Scans wählen. Unterordner werden mitgelesen.
+* Jeder Scan erscheint als Filmstück auf einem Kontaktbogen. Die Trennlinie wird beim Laden gesucht. Unsichere Scans sind gelb markiert («Bitte prüfen»), ein Klick auf «x prüfen» zeigt nur diese.
+* Linie setzen: im Bild klicken oder ziehen, Pfeiltasten verschieben fein (Shift grösser). Die Lupe zeigt den Scan gross mit beiden Ergebnissen, Enter bestätigt und geht zum nächsten Scan.
+* Einstellungen für alle Scans: Steg in der Mitte, Rand aussen, Drehen, Format (JPG oder PNG), Reihenfolge tauschen. Sie bleiben im Browser gespeichert.
+* Ausgabe immer als **eine ZIP Datei** im Download Ordner, Name `<Ordner> einzeln.zip`. Darin `<name>_1.jpg` und `<name>_2.jpg`, Unterordner bleiben erhalten. Über rund 450 MB wird auf mehrere ZIP verteilt (`Teil 1`, `Teil 2`).
+* Was der Browser lesen kann, geht: JPG, PNG, WebP. TIFF und HEIC nur, wenn der Browser sie öffnet (Safari ja, Chrome nein), sonst wird der Scan als «Nicht lesbar» markiert.
+* Metadaten (EXIF) werden nicht übernommen. JPG wird neu kodiert (Qualität einstellbar), PNG ist verlustfrei.
 
 ## Update einspielen
 

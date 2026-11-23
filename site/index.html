@@ -2,137 +2,169 @@
 <html lang="de-CH">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Half Frame Splitter</title>
+<meta name="description" content="Half Frame Scans in zwei Einzelbilder teilen. Läuft im Browser, ohne Upload.">
 <meta name="robots" content="noindex, nofollow">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0f0e0d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2ede5" media="(prefers-color-scheme: light)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="top">
-  <div>
-    <h1>Half Frame Splitter</h1>
-    <p class="sub">Scans von Half Frame Filmen in zwei Bilder teilen. Alles läuft in deinem Browser, es wird nichts hochgeladen.</p>
-  </div>
-  <div class="top-actions">
-    <button id="btnPick" class="primary" type="button">Ordner wählen</button>
-    <input id="fileInput" type="file" webkitdirectory multiple hidden>
-  </div>
+  <a class="brand" href="./" aria-label="halfframe, Startseite">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="2" y="6" width="28" height="20" rx="3.5" class="lg-film"/>
+      <rect x="5.5" y="10" width="9" height="12" rx="1.2" class="lg-frame"/>
+      <rect x="17.5" y="10" width="9" height="12" rx="1.2" class="lg-frame"/>
+      <path d="M16 7.5v17" class="lg-cut"/>
+    </svg>
+    <span>halfframe</span>
+  </a>
+  <p class="privacy">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <span>Deine Scans bleiben auf deinem Gerät</span>
+  </p>
 </header>
 
-<p id="msg" class="msg" role="status" hidden></p>
+<main>
+  <section id="intro" class="intro">
+    <p class="kicker">Half Frame Splitter</p>
+    <h1>Ein Scan.<br><em>Zwei Bilder.</em></h1>
+    <p class="lead">Deine Half Frame Kamera belichtet zwei Bilder auf jedes Kleinbildfeld. Lege die Scans hier ab, prüfe die Trennlinie und lade alle Einzelbilder in einer ZIP Datei herunter.</p>
 
-<section id="welcome" class="drop">
-  <div class="drop-inner">
-    <p class="drop-title">Ordner mit Scans hierher ziehen</p>
-    <p>oder oben auf «Ordner wählen» klicken. Unterordner werden mitgelesen.</p>
-    <ul class="notes">
-      <li>Formate: JPG, PNG, WebP. TIFF können Browser nicht lesen, solche Scans bitte als JPG oder PNG speichern.</li>
-      <li>Ein Scan mit zwei Bildern nebeneinander wird in der Mitte geteilt. Die Schnittlinie lässt sich pro Bild verschieben.</li>
-      <li>Am besten in Chrome, Edge oder Brave am Computer. Dort kann die Seite die Ergebnisse direkt in einen Unterordner «geschnitten» schreiben, sonst gibt es ZIP Dateien.</li>
-      <li>Metadaten (EXIF) werden nicht in die neuen Bilder übernommen.</li>
-    </ul>
-  </div>
-</section>
-
-<div id="workspace" class="workspace" hidden>
-
-  <aside class="list" aria-label="Bilder">
-    <div id="listHead" class="list-head"></div>
-    <div id="thumbs" class="thumbs"></div>
-  </aside>
-
-  <section class="stage">
-    <div class="stage-bar">
-      <button id="prev" type="button" title="Vorheriges Bild (Pfeil links)">‹</button>
-      <span id="counter" class="counter"></span>
-      <button id="next" type="button" title="Nächstes Bild (Pfeil rechts)">›</button>
-      <span id="fname" class="fname"></span>
+    <div id="drop" class="strip">
+      <div class="strip-frames" aria-hidden="true">
+        <span class="fr fr1">1</span><span class="cut"></span><span class="fr fr2">2</span>
+      </div>
+      <p class="strip-title">Ordner mit Scans hierher ziehen</p>
+      <div class="strip-actions">
+        <button id="pickDir" class="btn primary" type="button">Ordner wählen</button>
+        <button id="pickFiles" class="btn on-film" type="button">Einzelne Scans</button>
+      </div>
+      <p class="strip-note">JPG, PNG oder WebP · Unterordner werden mitgelesen</p>
     </div>
-    <div class="view-wrap">
-      <canvas id="view" aria-label="Vorschau mit Schnittlinie"></canvas>
-      <p id="viewErr" class="view-err" hidden>Dieses Bild konnte nicht gelesen werden.</p>
-    </div>
-    <p class="hint">Schnittlinie ziehen oder rechts einstellen. Hell bleibt, dunkel wird weggeschnitten.</p>
-    <div class="results">
-      <figure><canvas id="resA"></canvas><figcaption id="capA">Bild A</figcaption></figure>
-      <figure><canvas id="resB"></canvas><figcaption id="capB">Bild B</figcaption></figure>
-    </div>
+
+    <ol class="steps">
+      <li><b>1</b><span>Scans ablegen</span></li>
+      <li><b>2</b><span>Linie prüfen, wo nötig</span></li>
+      <li><b>3</b><span>ZIP herunterladen</span></li>
+    </ol>
+    <p class="demo"><button id="demo" class="link" type="button">Mit einem Testbild ausprobieren</button></p>
   </section>
 
-  <aside class="controls">
-    <h2>Schnitt</h2>
-
-    <label class="field">
-      <span>Richtung</span>
-      <select id="dir">
-        <option value="auto">Automatisch</option>
-        <option value="v">Zwei Bilder nebeneinander</option>
-        <option value="h">Zwei Bilder untereinander</option>
-      </select>
-    </label>
-
-    <label class="field">
-      <span>Position <output id="cutOut"></output></span>
-      <input id="cut" type="range" min="20" max="80" step="0.1">
-    </label>
-
-    <label class="field">
-      <span>Mittelstreifen entfernen <output id="gapOut"></output></span>
-      <input id="gap" type="range" min="0" max="10" step="0.1">
-    </label>
-
-    <label class="field">
-      <span>Aussenrand entfernen <output id="edgeOut"></output></span>
-      <input id="edge" type="range" min="0" max="10" step="0.1">
-    </label>
-
-    <label class="field">
-      <span>Drehung</span>
-      <select id="rot">
-        <option value="0">Keine</option>
-        <option value="90">90° rechts</option>
-        <option value="180">180°</option>
-        <option value="270">90° links</option>
-      </select>
-    </label>
-
-    <label class="check"><input id="swap" type="checkbox"> Reihenfolge A und B tauschen</label>
-    <label class="check"><input id="skip" type="checkbox"> Dieses Bild überspringen</label>
-
-    <div class="btn-col">
-      <button id="btnAuto" type="button">Streifen automatisch suchen</button>
-      <button id="btnApplyAll" type="button">Einstellungen auf alle Bilder übernehmen</button>
-      <button id="btnAutoAll" type="button">Streifen bei allen Bildern suchen</button>
+  <section id="sheet" class="sheet" hidden aria-label="Kontaktbogen">
+    <div class="toolbar">
+      <div class="summary">
+        <strong id="sumCount"></strong>
+        <button id="sumCheck" class="pill warn" type="button" hidden></button>
+      </div>
+      <div class="tools">
+        <details class="settings" id="settings">
+          <summary class="btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+            Einstellungen
+          </summary>
+          <div class="settings-panel">
+            <label class="field">
+              <span>Steg in der Mitte wegschneiden <output id="sGapOut"></output></span>
+              <input id="sGap" type="range" min="0" max="8" step="0.1" value="1">
+              <small>Der schmale Streifen zwischen den beiden Bildern.</small>
+            </label>
+            <label class="field">
+              <span>Rand aussen wegschneiden <output id="sEdgeOut"></output></span>
+              <input id="sEdge" type="range" min="0" max="8" step="0.1" value="0">
+            </label>
+            <div class="row2">
+              <label class="field"><span>Drehen</span>
+                <select id="sRot">
+                  <option value="0">Nicht drehen</option>
+                  <option value="90">90° rechts</option>
+                  <option value="270">90° links</option>
+                  <option value="180">180°</option>
+                </select>
+              </label>
+              <label class="field"><span>Format</span>
+                <select id="sFmt">
+                  <option value="jpeg">JPG</option>
+                  <option value="png">PNG (verlustfrei)</option>
+                </select>
+              </label>
+            </div>
+            <label class="field" id="sQField">
+              <span>JPG Qualität <output id="sQOut"></output></span>
+              <input id="sQ" type="range" min="70" max="100" step="1" value="95">
+            </label>
+            <label class="check"><input id="sSwap" type="checkbox"> Reihenfolge tauschen (Bild 2 zuerst)</label>
+            <button id="redetect" class="btn small" type="button">Alle Linien neu suchen</button>
+          </div>
+        </details>
+        <button id="addMore" class="btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Hinzufügen
+        </button>
+        <button id="reset" class="btn ghost" type="button">Neu beginnen</button>
+      </div>
     </div>
-    <p class="hint">Die automatische Suche sucht den Streifen zwischen den beiden Bildern. Sie ist ein Hilfsmittel, prüfe das Ergebnis.</p>
+    <p class="sheet-hint">Klicke oder ziehe im Bild, um die rote Linie zu setzen. Mit der Lupe prüfst du einen Scan in gross.</p>
+    <div id="grid" class="grid"></div>
+  </section>
+</main>
 
-    <h2>Speichern</h2>
-
-    <label class="field">
-      <span>Format</span>
-      <select id="fmt">
-        <option value="jpeg">JPG</option>
-        <option value="png">PNG (verlustfrei, grosse Dateien)</option>
-      </select>
-    </label>
-
-    <label class="field" id="qualField">
-      <span>JPG Qualität <output id="qOut"></output></span>
-      <input id="quality" type="range" min="60" max="100" step="1" value="95">
-    </label>
-
-    <button id="btnExport" class="primary wide" type="button">Alle schneiden und speichern</button>
-    <progress id="prog" max="1" value="0" hidden></progress>
-    <p id="progText" class="hint" hidden></p>
-    <button id="btnCancel" type="button" hidden>Abbrechen</button>
-    <p id="exportInfo" class="hint"></p>
-  </aside>
+<div id="dock" class="dock" hidden>
+  <div class="dock-inner">
+    <div class="dock-info">
+      <span id="dockText"></span>
+      <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+    </div>
+    <button id="zip" class="btn primary big" type="button" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+      <span>ZIP herunterladen</span><small id="zipSub"></small>
+    </button>
+  </div>
 </div>
 
-<noscript><p class="msg">Diese Seite braucht JavaScript.</p></noscript>
+<div class="dropveil" aria-hidden="true"><div>Loslassen zum Hinzufügen</div></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<dialog id="loupe" class="loupe" aria-labelledby="lName">
+  <div class="l-head">
+    <button id="lPrev" class="icon" type="button" aria-label="Vorheriger Scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button id="lNext" class="icon" type="button" aria-label="Nächster Scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+    <div class="l-title"><span id="lName"></span><span id="lIdx" class="mono"></span></div>
+    <span id="lState" class="chip"></span>
+    <button id="lClose" class="icon" type="button" aria-label="Schliessen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div class="l-stage"><canvas id="lCanvas" tabindex="0" aria-label="Scan mit Trennlinie. Klicken oder ziehen, Pfeiltasten verschieben fein."></canvas></div>
+  <div class="l-tools">
+    <div class="nudge" role="group" aria-label="Linie fein verschieben">
+      <button id="lMinus" class="icon" type="button" aria-label="Linie ein wenig zurück"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg></button>
+      <output id="lPos"></output>
+      <button id="lPlus" class="icon" type="button" aria-label="Linie ein wenig vor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></button>
+    </div>
+    <button id="lFind" class="btn small" type="button">Linie suchen</button>
+    <button id="lMid" class="btn small" type="button">Mitte</button>
+    <select id="lDir" aria-label="Richtung der Trennlinie">
+      <option value="auto">Richtung automatisch</option>
+      <option value="v">Bilder nebeneinander</option>
+      <option value="h">Bilder untereinander</option>
+    </select>
+    <label class="check"><input id="lSkip" type="checkbox"> Weglassen</label>
+    <span class="grow"></span>
+    <button id="lOk" class="btn primary" type="button">Passt, weiter</button>
+  </div>
+  <div class="l-out">
+    <figure><canvas id="lA"></canvas><figcaption id="lCapA"></figcaption></figure>
+    <figure><canvas id="lB"></canvas><figcaption id="lCapB"></figcaption></figure>
+    <p class="keys"><kbd>←</kbd><kbd>→</kbd> fein verschieben · <kbd>Shift</kbd> grösser · <kbd>Enter</kbd> passt, weiter · <kbd>Esc</kbd> schliessen</p>
+  </div>
+</dialog>
+
+<input id="inDir" type="file" webkitdirectory multiple hidden>
+<input id="inFiles" type="file" accept="image/*,.tif,.tiff,.heic,.heif" multiple hidden>
+<noscript><p class="intro">Diese Seite braucht JavaScript.</p></noscript>
 <script src="app.js"></script>
 </body>
 </html>
