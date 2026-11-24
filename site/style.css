@@ -302,6 +302,28 @@ input[type=text]:focus-visible, input[type=date]:focus-visible { outline: 2px so
   -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
 }
 .rotbtn:hover { background: var(--safe); }
+/* x neben dem Zahlenabzeichen: Bild weglassen. Weggelassen zeigt der Knopf rot den Pfeil zum Zurückholen. */
+.halfx {
+  position: absolute; z-index: 2; transform: translate(42px, 6px);
+  display: grid; place-items: center; width: 30px; height: 30px; padding: 0;
+  border: 0; border-radius: 50%; background: rgba(12, 10, 8, .72); color: #fff;
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  transition: background .15s;
+}
+.halfx svg { width: 14px; height: 14px; }
+.halfx:hover, .halfx[data-on="true"] { background: var(--safe); }
+.card.skipped .cv { opacity: .3; filter: grayscale(1); }
+.l-out canvas.off { opacity: .3; }
+.skip-toggle { display: inline-flex; align-items: center; gap: 6px; }
+.skip-toggle svg { width: 15px; height: 15px; }
+.skip-toggle[aria-pressed="true"] { border-color: var(--safe); color: var(--safe); }
+.scanx {
+  flex: none; width: 28px; height: 28px; display: grid; place-items: center; padding: 0;
+  border-radius: 50%; border: 1px solid var(--line); background: var(--raise); color: var(--muted);
+}
+.scanx svg { width: 14px; height: 14px; }
+.scanx:hover:not(:disabled) { color: #fff; background: var(--safe); border-color: var(--safe); }
+.scanx:disabled { display: none; }
 .rotbtn .deg:empty { display: none; }
 .view-split .lupe { display: none; }
 .meta { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 0 4px 2px; }

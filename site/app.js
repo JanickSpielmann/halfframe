@@ -25,7 +25,9 @@ let view = 'scan';   // 'scan': Scan mit Linie, 'split': die beiden fertigen Bil
 const VIEW_STORE = 'halfframe.view';
 
 const ROT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4v7h-7"/></svg>';
-const ZOOM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8.5v5M8.5 11h5"/></svg>';
+const X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+const UNDO_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+const ZOOM_ICON ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8.5v5M8.5 11h5"/></svg>';
 
 const el = {
   intro: $('#intro'), sheet: $('#sheet'), grid: $('#grid'),
@@ -43,7 +45,7 @@ const el = {
   toast: $('#toast'), sheetHint: $('#sheetHint'),
   dlg: $('#loupe'), lCanvas: $('#lCanvas'), lName: $('#lName'), lIdx: $('#lIdx'), lPos: $('#lPos'),
   lPrev: $('#lPrev'), lNext: $('#lNext'), lClose: $('#lClose'), lDir: $('#lDir'), lFind: $('#lFind'),
-  lMid: $('#lMid'), lRot0: $('#lRot0'), lRot1: $('#lRot1'), lNum0: $('#lNum0'), lNum1: $('#lNum1'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
+  lMid: $('#lMid'), lSkip: $('#lSkip'), lDrop0: $('#lDrop0'), lDrop1: $('#lDrop1'), lRot0: $('#lRot0'), lRot1: $('#lRot1'), lNum0: $('#lNum0'), lNum1: $('#lNum1'), lOk: $('#lOk'), lMinus: $('#lMinus'), lPlus: $('#lPlus'),
   lGap: $('#lGap'), lA: $('#lA'), lB: $('#lB'), lCapA: $('#lCapA'), lCapB: $('#lCapB'), lState: $('#lState'),
 };
 
@@ -107,7 +109,22 @@ function rotateOut(it, n) {
 // Breite des weggeschnittenen Stegs als Anteil: erkannt pro Scan, sonst aus den Einstellungen
 function gapOf(it) { return it.gap != null ? it.gap : S.gap / 100; }
 
-function isExported(i) { return !i.skip && i.pv && i.state !== 'error'; }
+// Weglassen: it.skip lässt den ganzen Scan weg, it.off[p] ein einzelnes Bild (p: 0 links oder oben, 1 rechts oder unten).
+// Wie bei it.rot gilt p pro Teil im Scan, damit «Reihenfolge tauschen» die Auswahl nicht vertauscht.
+function dropped(it) { return it.skip || (it.off[0] && it.off[1]); }
+
+function isExported(i) { return !dropped(i) && i.pv && i.state !== 'error'; }
+
+// Indizes (0 oder 1) der Ausgabebilder eines Scans, die ins ZIP kommen
+function keptOut(it) {
+  const off = it.off || [false, false];
+  return [0, 1].filter((n) => !off[S.swap ? 1 - n : n]);
+}
+
+// Weglassen Flags in der Reihenfolge der Ausgabebilder
+function outOff(it) { return S.swap ? [it.off[1], it.off[0]] : it.off; }
+
+function outCount() { return items.filter(isExported).reduce((s, i) => s + keptOut(i).length, 0); }
 
 // Datei Name ohne Zeichen, die in Dateinamen verboten sind
 function cleanName(t) { return String(t).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').replace(/\s+/g, ' ').trim(); }
@@ -115,15 +132,22 @@ function cleanName(t) { return String(t).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, 
 // Nummer 3 stellig, ab 1000 Bildern so viele Stellen wie nötig
 function numStr(n, total) { return String(n).padStart(Math.max(3, String(total).length), '0'); }
 
-// Namen der beiden Bilder eines Scans. Mit Umbenennen: «Name Datum Wort 001», durchgehend über alle Scans.
-function outNames(it, seq) {
+// Namen der beiden Bilder eines Scans, null für ein weggelassenes Bild. Mit Umbenennen: «Name Datum Wort 001»,
+// durchgehend über alle Bilder, die ins ZIP kommen. before: Anzahl Bilder aus den Scans davor.
+function outNames(it, before) {
   const ext = S.fmt === 'png' ? 'png' : 'jpg';
-  if (!S.rename) return [`${it.base}_1.${ext}`, `${it.base}_2.${ext}`];
-  if (seq == null) { const list = items.filter(isExported); seq = list.indexOf(it); }
-  const total = items.filter(isExported).length * 2;
+  const kept = keptOut(it);
+  if (!S.rename) return [0, 1].map((n) => (kept.includes(n) ? `${it.base}_${n + 1}.${ext}` : null));
+  if (before == null) {
+    before = 0;
+    for (const o of items) { if (o === it) break; if (isExported(o)) before += keptOut(o).length; }
+  }
+  const total = outCount();
   const head = [cleanName(S.name), S.useDate && S.date ? S.date : '', cleanName(S.label)].filter(Boolean).join(' ');
-  const first = Math.max(0, seq) * 2;
-  return [1, 2].map((k) => `${head ? head + ' ' : ''}${numStr(first + k, total)}.${ext}`);
+  return [0, 1].map((n) => {
+    const k = kept.indexOf(n);
+    return k < 0 ? null : `${head ? head + ' ' : ''}${numStr(before + k + 1, total)}.${ext}`;
+  });
 }
 
 /* ---------- Bilder lesen ---------- */
@@ -360,6 +384,12 @@ function drawSplit(cv, src, it) {
   x.fill('evenodd');
   x.restore();
 
+  // Weggelassene Bilder zusätzlich abdunkeln
+  x.save();
+  x.fillStyle = 'rgba(8, 7, 6, .6)';
+  R.forEach((r, p) => { if (it.off[p] && r.w > 0 && r.h > 0) x.fillRect(r.x, r.y, r.w, r.h); });
+  x.restore();
+
   // Linie mit Griff
   const L = o === 'v' ? W : H, c = it.pos * L;
   x.strokeStyle = LINE;
@@ -416,6 +446,7 @@ function drawResult(cv, src, it) {
   const x = cv.getContext('2d');
   x.clearRect(0, 0, W, H);
   let ox = 0;
+  const off = outOff(it);
   it.resPos = parts.map((p, n) => {
     const left = n === 0 ? 0 : parts[0].w + gap;
     return { lx: left / W, x: (left + p.w) / W, y: ((H - p.h) / 2) / H };
@@ -424,6 +455,7 @@ function drawResult(cv, src, it) {
     if (p.sw >= 2 && p.sh >= 2) {
       const oy = (H - p.h) / 2;
       x.save();
+      if (off[n]) x.globalAlpha = 0.25;
       x.translate(ox + p.w / 2, oy + p.h / 2);
       x.rotate(p.rot * Math.PI / 180);
       x.drawImage(src, p.r.x * k, p.r.y * k, p.sw, p.sh, -p.sw / 2, -p.sh / 2, p.sw, p.sh);
@@ -458,6 +490,26 @@ function placeNumbers(spans, pos, labels) {
   });
 }
 
+// x neben den Zahlenabzeichen: das jeweilige Bild weglassen oder wieder aufnehmen.
+// pos wie bei placeNumbers, off: pro Knopf true, wenn das Bild weggelassen ist.
+function placeDropButtons(btns, pos, off) {
+  btns.forEach((b, n) => {
+    const p = pos && pos[n];
+    if (!p) { b.hidden = true; return; }
+    b.hidden = false;
+    b.style.left = (p.lx * 100) + '%';
+    b.style.top = (p.y * 100) + '%';
+    const on = String(!!off[n]);
+    if (b.dataset.on !== on) {
+      b.dataset.on = on;
+      b.innerHTML = off[n] ? UNDO_ICON : X_ICON;
+      const t = off[n] ? 'Bild wieder aufnehmen' : 'Bild weglassen';
+      b.title = t;
+      b.setAttribute('aria-label', t);
+    }
+  });
+}
+
 // Linke obere Ecke der beiden Teile im Scan (A, B), mit der Nummer, unter der sie ins ZIP kommen
 function scanNumbers(it) {
   const { A, B } = layout(it);
@@ -472,8 +524,8 @@ function setView(v) {
   for (const b of document.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === view));
   el.grid.classList.toggle('view-split', view === 'split');
   el.sheetHint.textContent = view === 'split'
-    ? 'So kommen die Bilder ins ZIP. Ein Klick öffnet die Lupe, dort lässt sich die Linie verschieben.'
-    : 'Klicke oder ziehe im Bild, um die rote Linie zu setzen. Mit der Lupe prüfst du einen Scan in gross.';
+    ? 'So kommen die Bilder ins ZIP. Ein Klick öffnet die Lupe, dort lässt sich die Linie verschieben. Mit dem x lässt du ein Bild oder einen ganzen Scan weg.'
+    : 'Klicke oder ziehe im Bild, um die rote Linie zu setzen. Mit der Lupe prüfst du einen Scan in gross. Mit dem x lässt du ein Bild oder einen ganzen Scan weg.';
   try { localStorage.setItem(VIEW_STORE, view); } catch (e) { /* ohne Speicher weiter */ }
   for (const it of items) if (it.pv) renderCard(it);
 }
@@ -481,7 +533,7 @@ function setView(v) {
 /* ---------- Karten ---------- */
 
 const STATE_TEXT = { load: 'Lädt', auto: 'Linie gefunden', check: 'Bitte prüfen', manual: 'Geprüft', error: 'Nicht lesbar', skip: 'Weggelassen' };
-function chipState(it) { return it.skip && it.state !== 'error' ? 'skip' : it.state; }
+function chipState(it) { return dropped(it) && it.state !== 'error' ? 'skip' : it.state; }
 
 function makeItem({ file, rel }) {
   const slash = rel.lastIndexOf('/');
@@ -492,7 +544,7 @@ function makeItem({ file, rel }) {
     dir: slash >= 0 ? rel.slice(0, slash + 1) : '',
     base: (dot > 0 ? name.slice(0, dot) : name) || 'bild',
     w: 0, h: 0, pv: null, big: null, pos: 0.5, gap: null, rot: [0, 0], how: '', orient: 'auto',
-    state: 'load', skip: false, dead: false, no: 0, card: null,
+    state: 'load', skip: false, off: [false, false], dead: false, no: 0, card: null,
   };
 }
 
@@ -505,6 +557,8 @@ function buildCard(it) {
       <div class="cv-wrap">
         <canvas class="cv" tabindex="0" hidden></canvas>
         <span class="numbadge" hidden></span><span class="numbadge" hidden></span>
+        <button class="halfx" type="button" data-n="0" hidden></button>
+        <button class="halfx" type="button" data-n="1" hidden></button>
         <button class="rotbtn" type="button" data-n="0" title="Bild 1 um 90° drehen" hidden>${ROT_ICON}<span class="deg"></span></button>
         <button class="rotbtn" type="button" data-n="1" title="Bild 2 um 90° drehen" hidden>${ROT_ICON}<span class="deg"></span></button>
       </div>
@@ -514,6 +568,7 @@ function buildCard(it) {
     <div class="meta">
       <span class="name"></span>
       <span class="chip"></span>
+      <button class="scanx" type="button" disabled></button>
     </div>`;
   const cv = $('.cv', card);
   const nm = $('.name', card);
@@ -523,6 +578,15 @@ function buildCard(it) {
   bindLine(cv, () => it, true);
   $('.lupe', card).addEventListener('click', () => openLoupe(it));
   for (const b of card.querySelectorAll('.rotbtn')) b.addEventListener('click', (e) => { e.stopPropagation(); rotateOut(it, +b.dataset.n); });
+  // In der Ansicht «Einzelbilder» stehen die Knöpfe in der Reihenfolge der Ausgabebilder, sonst in der des Scans
+  for (const b of card.querySelectorAll('.halfx')) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const n = +b.dataset.n;
+      toggleHalf(it, view === 'split' && S.swap ? 1 - n : n);
+    });
+  }
+  $('.scanx', card).addEventListener('click', () => toggleSkip(it));
   it.card = card;
   return card;
 }
@@ -532,6 +596,7 @@ function renderCard(it) {
   if (!card) return;
   const st = chipState(it);
   card.dataset.state = it.state;
+  card.classList.toggle('skipped', dropped(it));
   const cv = $('.cv', card), ph = $('.ph', card);
   if (it.pv) {
     ph.hidden = true;
@@ -552,7 +617,41 @@ function renderCard(it) {
   const btns = card.querySelectorAll('.rotbtn');
   if (!it.pv || view !== 'split') btns.forEach((b) => { b.hidden = true; });
   else placeRotButtons(btns, it.resPos, outRots(it));
+  const drops = card.querySelectorAll('.halfx');
+  if (!it.pv || it.skip) drops.forEach((b) => { b.hidden = true; });
+  else if (view === 'split') placeDropButtons(drops, it.resPos, outOff(it));
+  else placeDropButtons(drops, scanNumbers(it).pos, it.off);
+  const sx = $('.scanx', card), gone = dropped(it);
+  sx.disabled = !it.pv || it.state === 'error';
+  sx.innerHTML = gone ? UNDO_ICON : X_ICON;
+  sx.title = gone ? 'Scan wieder aufnehmen' : 'Ganzen Scan weglassen';
+  sx.setAttribute('aria-label', sx.title);
   $('.edge', card).textContent = `${pad2(it.no)}  ▸  ${pad2(it.no)}A`;
+}
+
+function refresh(it) {
+  renderCard(it);
+  updateSummary();
+  if (loupe === it) drawLoupe();
+}
+
+// Ganzen Scan weglassen oder wieder aufnehmen. Sind beide Bilder einzeln weggelassen, kommen sie mit zurück.
+function toggleSkip(it) {
+  if (!it || !it.pv || it.state === 'error') return;
+  if (dropped(it)) {
+    it.skip = false;
+    if (it.off[0] && it.off[1]) it.off = [false, false];
+  } else {
+    it.skip = true;
+  }
+  refresh(it);
+}
+
+// Ein einzelnes Bild weglassen oder wieder aufnehmen. phys: 0 links oder oben, 1 rechts oder unten.
+function toggleHalf(it, phys) {
+  if (!it || !it.pv || it.state === 'error') return;
+  it.off[phys] = !it.off[phys];
+  refresh(it);
 }
 
 function numberFrames() {
@@ -621,21 +720,22 @@ function setPos(it, p, manual) {
 
 function updateSummary() {
   const live = items.filter((i) => i.state !== 'error');
-  const use = live.filter((i) => !i.skip);
-  const check = live.filter((i) => i.state === 'check' && !i.skip).length;
+  const use = live.filter((i) => !dropped(i));
+  const check = live.filter((i) => i.state === 'check' && !dropped(i)).length;
   const loading = items.filter((i) => i.state === 'load').length;
+  const images = use.reduce((s, i) => s + keptOut(i).length, 0);
 
-  el.sumCount.textContent = `${plural(live.length, 'Scan', 'Scans')} · ${use.length * 2} Bilder`;
+  el.sumCount.textContent = `${plural(live.length, 'Scan', 'Scans')} · ${plural(images, 'Bild', 'Bilder')}`;
   if (onlyCheck && !check) { onlyCheck = false; el.grid.classList.remove('only-check'); }
   el.sumCheck.hidden = !check;
   el.sumCheck.textContent = onlyCheck ? 'Alle zeigen' : `${check} prüfen`;
 
-  el.zip.disabled = exporting || loading > 0 || !use.length;
-  el.zipSub.textContent = use.length ? `${use.length * 2} Bilder` : '';
+  el.zip.disabled = exporting || loading > 0 || !images;
+  el.zipSub.textContent = images ? plural(images, 'Bild', 'Bilder') : '';
   if (!exporting) {
     el.dockText.textContent = loading
       ? `Scans werden gelesen, noch ${loading} …`
-      : !use.length ? 'Kein Scan ausgewählt.'
+      : !images ? 'Kein Bild ausgewählt.'
       : check ? `${plural(check, 'Scan solltest', 'Scans solltest')} du noch ansehen. Du kannst aber auch direkt speichern.`
       : 'Alles bereit. Die Bilder kommen als eine ZIP Datei in deinen Download Ordner.';
   }
@@ -833,12 +933,19 @@ function paintLoupe() {
   const rots = outRots(it);
   const sn = scanNumbers(it);
   placeNumbers([el.lNum0, el.lNum1], sn.pos, sn.labels);
+  placeDropButtons([el.lDrop0, el.lDrop1], it.skip ? null : sn.pos, it.off);
+  const gone = dropped(it);
+  el.lSkip.setAttribute('aria-pressed', String(gone));
+  el.lSkip.innerHTML = (gone ? UNDO_ICON : X_ICON) + (gone ? 'Scan wieder aufnehmen' : 'Scan weglassen');
+  const oo = outOff(it);
+  el.lA.classList.toggle('off', oo[0]);
+  el.lB.classList.toggle('off', oo[1]);
   placeRotButtons([el.lRot0, el.lRot1], out.map((r) => ({ x: (r.x + r.w) / it.w, y: r.y / it.h })), rots);
   drawPart(el.lA, src, out[0], k, 300, rots[0]);
   drawPart(el.lB, src, out[1], k, 300, rots[1]);
   const names = outNames(it);
-  el.lCapA.textContent = names[0];
-  el.lCapB.textContent = names[1];
+  el.lCapA.textContent = names[0] || 'weggelassen';
+  el.lCapB.textContent = names[1] || 'weggelassen';
 }
 
 function step(dir, confirm) {
@@ -985,11 +1092,14 @@ async function exportZip() {
   const used = new Set();
   const names = [];
   const failed = [];
-  let zip = new Zip(), part = 1, files = 0;
+  let zip = new Zip(), part = 1, files = 0, made = 0;
 
   try {
     for (let i = 0; i < todo.length; i++) {
       const it = todo[i];
+      const kept = keptOut(it);
+      const before = made;
+      made += kept.length;
       el.dockText.textContent = `Schneide ${i + 1} von ${todo.length}: ${it.name}`;
       el.meter.style.width = `${(i / todo.length) * 100}%`;
       let full = null;
@@ -997,9 +1107,9 @@ async function exportZip() {
         full = await createImageBitmap(it.file);
         const { out } = layout(it, full.width, full.height);
         if (!out.every((r) => r.w >= 8 && r.h >= 8)) throw new Error('Schnitt zu klein');
-        const fn = outNames(it, i);
+        const fn = outNames(it, before);
         const rots = outRots(it);
-        for (let n = 0; n < 2; n++) {
+        for (const n of kept) {
           const blob = await renderPart(full, out[n], type, rots[n]);
           await zip.add(uniquePath(it.dir + fn[n], used), blob);
           files++;
@@ -1207,7 +1317,7 @@ function init() {
   // «ZIP herunterladen» öffnet zuerst die Einstellungen zum Speichern (Format, Qualität, Dateinamen)
   el.zip.addEventListener('click', () => {
     const n = items.filter(isExported).length;
-    el.exInfo.textContent = `${n * 2} Bilder aus ${n} Scans kommen in die Datei «${zipBase()}.zip».`;
+    el.exInfo.textContent = `${plural(outCount(), 'Bild', 'Bilder')} aus ${plural(n, 'Scan', 'Scans')} kommen in die Datei «${zipBase()}.zip».`;
     if (!el.exDlg.open) el.exDlg.showModal();
   });
   el.exGo.addEventListener('click', () => { el.exDlg.close(); exportZip(); });
@@ -1258,6 +1368,9 @@ function init() {
   el.lMinus.addEventListener('click', () => loupe && setPos(loupe, loupe.pos - 0.001, true));
   el.lPlus.addEventListener('click', () => loupe && setPos(loupe, loupe.pos + 0.001, true));
   el.lMid.addEventListener('click', () => loupe && setPos(loupe, 0.5, true));
+  el.lSkip.addEventListener('click', () => toggleSkip(loupe));
+  el.lDrop0.addEventListener('click', () => toggleHalf(loupe, 0));
+  el.lDrop1.addEventListener('click', () => toggleHalf(loupe, 1));
   el.lRot0.addEventListener('click', () => loupe && rotateOut(loupe, 0));
   el.lRot1.addEventListener('click', () => loupe && rotateOut(loupe, 1));
   el.lFind.addEventListener('click', () => {

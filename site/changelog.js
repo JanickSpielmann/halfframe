@@ -4,6 +4,7 @@
    Der erste Eintrag bestimmt die Version unten auf der Seite.
    Zählung: Die erste Zahl steigt bei einer neuen Gestaltung, sonst zählt die letzte Zahl hoch. */
 const CHANGELOG = [
+  { version: '2.5.0', date: '24.11.2026', text: 'Bilder weglassen mit einem x: Neben der Zahl 1 und 2 jedes Bildes sitzt ein x, in der Ansicht Scans, in der Ansicht Einzelbilder und in der Lupe. Das Bild wird abgedunkelt und kommt nicht ins ZIP. Mit dem Pfeil holst du es zurück. Das x neben dem Status einer Karte und der Knopf «Scan weglassen» in der Lupe lassen beide Bilder eines Scans weg. Die Nummern beim Umbenennen zählen nur die Bilder, die wirklich ins ZIP kommen.' },
   { version: '2.4.1', date: '23.11.2026', text: 'Ein Klick auf «ZIP herunterladen» öffnet ein Fenster mit den Einstellungen zum Speichern: Format, Qualität und Dateinamen. Erst dort startet der Download.' },
   { version: '2.4.0', date: '23.11.2026', text: 'Beim Speichern lassen sich die Bilder umbenennen: Name, Datum und ein Wort vor der Nummer, zum Beispiel «Film 1 2026-11-23 Foto 001». Die Nummer läuft durch alle Scans.' },
   { version: '2.3.3', date: '23.11.2026', text: 'Die Leertaste zentriert die Linie jetzt immer, auch wenn du zuletzt auf einen Dreh Knopf geklickt hast.' },
